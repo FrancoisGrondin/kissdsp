@@ -26,10 +26,7 @@ def demo_reverb():
 	             alphas=0.5 * np.ones(6),
 	             c=343.0)
 	hs = rb.rir(rm)
-
-	ss = src.read("audio/speeches.wav")
-	xs = mx.collapse(rb.conv(hs, ss))
-	vz.wave(xs)
+	vz.rir(hs)
 
 
 def main():
