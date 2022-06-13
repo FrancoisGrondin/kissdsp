@@ -86,10 +86,34 @@ def demo_mask():
 	Ys = fb.stft(ys)
 
 	# Compute masks
-	Ms = mk.irm(Ts, Ys)
+	Ms = mk.ibm(Ts, Ys)
 
 	# Display
 	vz.mask(Ms)
+
+
+def demo_mvdr():
+
+	# Create a rectangular room with two sources
+	rm = rb.room(mics=np.asarray([[-0.05, -0.05, +0.00], [-0.05, +0.05, +0.00], [+0.05, -0.05, +0.00], [+0.05, +0.05, +0.00]]),
+	             box=np.asarray([10.0, 10.0, 2.5]),
+	             srcs=np.asarray([[2.0, 3.0, 1.0], [8.0, 7.0, 1.5]]),
+	             origin=np.asarray([4.0, 5.0, 1.25]),
+	             alphas=0.5 * np.ones(6),
+	             c=343.0)
+
+	# Create room impulse responses
+	hs = rb.rir(rm)
+
+	# Load speech audio
+	ss = src.read("audio/speeches.wav")
+
+	# Apply room impulse response
+	xs = rb.conv(hs, ss)
+
+	# Get target and interference
+	ts = mx.source(xs, 0)
+
 
 
 def main():
