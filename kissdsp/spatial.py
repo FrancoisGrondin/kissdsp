@@ -20,6 +20,21 @@ def scm(Xs, Ms=None):
     nb_of_frames = Xs.shape[1]
     nb_of_bins = Xs.shape[2]
 
+    if Ms is None:
+        Ms = np.ones(Xs.shape, dtype=np.float32)
+
+    XXs = np.zeros((nb_of_bins, nb_of_channels, nb_of_channels), dtype=np.csingle)
+
+    for bin_index in range(0, nb_of_bins):
+
+        X = Xs[:, :, bin_index]
+        M = Ms[:, :, bin_index]
+
+        XM = X * M
+        XXs[bin_index, :, :] = XM @ XM.conj().T
+
+    return XXs
+
 
 def steering(XXs):
     """

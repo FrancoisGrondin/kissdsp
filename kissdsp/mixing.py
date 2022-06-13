@@ -27,7 +27,7 @@ def channel(xs, channel_index):
 
     Returns:
         (np.ndarray):
-            Signals in the time domain (nb_of_channels, nb_of_samples).
+            Signals in the time domain (nb_of_sources, nb_of_samples).
     """
 
     return xs[:, channel_index, :]

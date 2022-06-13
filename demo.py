@@ -1,10 +1,13 @@
 import argparse as ap
 import numpy as np
+
+import kissdsp.beamformer as bf
 import kissdsp.filterbank as fb
 import kissdsp.masking as mk
 import kissdsp.mixing as mx
 import kissdsp.reverb as rb
 import kissdsp.source as src
+import kissdsp.spatial as sp
 import kissdsp.visualize as vz
 
 def demo_waveform():
@@ -77,16 +80,16 @@ def demo_mask():
 	# Remix to get anechoic target vs reverb target + interference
 	xs = mx.remix(xsar, [[0], [1,2,3]])
 
-	# Get target and the rest
+	# Get target and residual
 	ts = mx.source(xs, 0)
-	os = mx.source(xs, 1)
+	rs = mx.source(xs, 1)
 
 	# Compute spectrograms
 	Ts = fb.stft(ts)
-	Os = fb.stft(os)
+	Rs = fb.stft(rs)
 
 	# Compute masks
-	Ms = mk.irm(Ts, Os)
+	Ms = mk.irm(Ts, Rs)
 
 	# Display
 	vz.mask(Ms)
@@ -99,7 +102,7 @@ def demo_mvdr():
 	             box=np.asarray([10.0, 10.0, 2.5]),
 	             srcs=np.asarray([[2.0, 3.0, 1.0], [8.0, 7.0, 1.5]]),
 	             origin=np.asarray([4.0, 5.0, 1.25]),
-	             alphas=0.5 * np.ones(6),
+	             alphas=0.8 * np.ones(6),
 	             c=343.0)
 
 	# Create room impulse responses
@@ -108,18 +111,45 @@ def demo_mvdr():
 	# Load speech audio
 	ss = src.read("audio/speeches.wav")
 
+	# Generate white noise
+	ss[1, :] = 0.01 * src.white(nb_of_samples=ss.shape[1])
+
 	# Apply room impulse response
 	xs = rb.conv(hs, ss)
 
-	# Get target and interference
+	# Get target and residual
 	ts = mx.source(xs, 0)
+	rs = mx.source(xs, 1)
 
+	# Get mixture
+	ys = mx.collapse(xs)
+
+	# Compute spectrograms
+	Ts = fb.stft(ts)
+	Rs = fb.stft(rs)
+	Ys = fb.stft(ys)
+
+	# Compute spatial correlation matrices
+	TTs = sp.scm(Ts)
+	RRs = sp.scm(Rs)
+
+	# Compute steering vector
+	vs = sp.steering(TTs)
+
+	# Compute mvdr weights
+	ws = bf.mvdr(vs, RRs)
+
+	# Perform beamforming
+	Zs = bf.beam(Ys, ws)
+
+	vz.spex(Ys)
+	vz.spex(Zs)
 
 
 def main():
 
 	parser = ap.ArgumentParser(description='Choose demo.')
-	parser.add_argument('--operation', choices=['waveform', 'spectrogram', 'reverb', 'mask'])
+	parser.add_argument('--operation', choices=['waveform', 'spectrogram', 'reverb', 'mask', 'mvdr'])
 	args = parser.parse_args()
 
 	if args.operation == 'waveform':
@@ -133,6 +163,9 @@ def main():
 
 	if args.operation == 'mask':
 		demo_mask()
+
+	if args.operation == 'mvdr':
+		demo_mvdr()
 
 if __name__ == "__main__":
 	main()
