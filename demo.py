@@ -113,7 +113,7 @@ def demo_mvdr():
 	ss = src.read("audio/speeches.wav")
 
 	# Generate white noise
-	ss[1, :] = 0.01 * src.white(nb_of_samples=ss.shape[1])
+	ss[1, :] = 0.05 * src.white(nb_of_samples=ss.shape[1])
 
 	# Apply room impulse response
 	xs = rb.conv(hs, ss)
