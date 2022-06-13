@@ -45,6 +45,23 @@ def istft(Xs, hop_size=128):
             The time-frequency representation (nb_of_channels, nb_of_samples).
     """
 
-    pass
+    nb_of_channels = Xs.shape[0]
+    nb_of_frames = Xs.shape[1]
+    nb_of_bins = Xs.shape[2]
+    frame_size = (nb_of_bins-1)*2
+    nb_of_samples = nb_of_frames * hop_size + frame_size - hop_size
+
+    ws = np.tile(np.hanning(frame_size), (nb_of_channels, 1))
+    xs = np.zeros((nb_of_channels, nb_of_samples), dtype=np.float32)
+
+    for i in range(0, nb_of_frames):
+
+        sample_start = i * hop_size
+        sample_stop = i * hop_size + frame_size
+
+        xs[:, sample_start:sample_stop] += np.fft.irfft(Xs[:, i, :]) * ws
+
+    return xs
+    
 
 

@@ -6,6 +6,7 @@ import kissdsp.filterbank as fb
 import kissdsp.masking as mk
 import kissdsp.mixing as mx
 import kissdsp.reverb as rb
+import kissdsp.sink as snk
 import kissdsp.source as src
 import kissdsp.spatial as sp
 import kissdsp.visualize as vz
@@ -142,8 +143,12 @@ def demo_mvdr():
 	# Perform beamforming
 	Zs = bf.beam(Ys, ws)
 
-	vz.spex(Ys)
-	vz.spex(Zs)
+	# Return to time domain
+	zs = fb.istft(Zs)
+
+	# Save audio
+	snk.write(ys, "audio/noisy.wav")
+	snk.write(zs, "audio/cleaned.wav")
 
 
 def main():
