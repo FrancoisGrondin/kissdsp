@@ -79,14 +79,14 @@ def demo_mask():
 
 	# Get target and the rest
 	ts = mx.source(xs, 0)
-	ys = mx.source(xs, 1)
+	os = mx.source(xs, 1)
 
 	# Compute spectrograms
 	Ts = fb.stft(ts)
-	Ys = fb.stft(ys)
+	Os = fb.stft(os)
 
 	# Compute masks
-	Ms = mk.ibm(Ts, Ys)
+	Ms = mk.irm(Ts, Os)
 
 	# Display
 	vz.mask(Ms)
