@@ -16,7 +16,7 @@ def room(mics, box, srcs, origin, alphas, c):
         origin (np.ndarray):
             Microphone array position in the room in meters as (x,y,z) coordinates (3,).
         alphas (np.ndarray):
-            Absorption coefficients between [0,1[ (6,).
+            Absorption coefficients between ]0,1] (6,).
         c (float):
             Speed of sound (in m/sec) (1,).
 
@@ -33,6 +33,26 @@ def room(mics, box, srcs, origin, alphas, c):
           "c": c}
 
     return rm
+
+
+def anechoic(rm):
+    """
+    Convert room to anechoic room
+
+    Args:
+        rm (dict):
+            Room info
+
+    Returns:
+        (dict)
+            Room info
+    """
+
+    rm_ane = rm.copy()
+    rm_ane["alphas"] = np.ones(6)
+
+    return rm_ane
+    
 
 
 def rir(rm, sample_rate=16000, rir_size=4096):
