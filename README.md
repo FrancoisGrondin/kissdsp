@@ -18,6 +18,12 @@ python3 demo.py --operation waveform
 python3 demo.py --operation spectrogram
 ```
 
+### Display room configuration
+
+```
+python3 demo.py --operation room
+```
+
 ### Generate and display room impulse responses
 
 ```

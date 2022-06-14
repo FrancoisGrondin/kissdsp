@@ -30,6 +30,19 @@ def demo_spectrogram():
 	# Display spectrograms
 	vz.spex(Ss)
 
+def demo_room():
+
+	# Create a rectangular room with one source
+	rm = rb.room(mics=np.asarray([[-0.05, -0.05, +0.00], [-0.05, +0.05, +0.00], [+0.05, -0.05, +0.00], [+0.05, +0.05, +0.00]]),
+	             box=np.asarray([6.0, 6.0, 2.5]),
+	             srcs=np.asarray([[1.0, 2.0, 1.0]]),
+	             origin=np.asarray([3.0, 3.0, 1.25]),
+	             alphas=0.5 * np.ones(6),
+	             c=343.0)
+
+	# Display room configuration
+	vz.room(rm)
+
 def demo_reverb():
 
 	# Create a rectangular room with one source
@@ -154,7 +167,7 @@ def demo_mvdr():
 def main():
 
 	parser = ap.ArgumentParser(description='Choose demo.')
-	parser.add_argument('--operation', choices=['waveform', 'spectrogram', 'reverb', 'mask', 'mvdr'])
+	parser.add_argument('--operation', choices=['waveform', 'spectrogram', 'room', 'reverb', 'mask', 'mvdr'])
 	args = parser.parse_args()
 
 	if args.operation == 'waveform':
@@ -162,6 +175,9 @@ def main():
 
 	if args.operation == 'spectrogram':
 		demo_spectrogram()
+
+	if args.operation == 'room':
+		demo_room()
 
 	if args.operation == 'reverb':
 		demo_reverb()

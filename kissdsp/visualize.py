@@ -117,3 +117,31 @@ def rir(hs):
 
     plt.show()
 
+
+def room(rm):
+    """
+    Display the room geometry
+
+    Args:
+        rm (dict):
+            Room info
+    """
+
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+
+    ax.scatter(rm['mics'][:, 0] + rm['origin'][0], 
+               rm['mics'][:, 1] + rm['origin'][1], 
+               rm['mics'][:, 2] + rm['origin'][2],
+               color='b')
+    ax.scatter(rm['srcs'][:, 0],
+               rm['srcs'][:, 1],
+               rm['srcs'][:, 2],
+               color='r')
+
+    ax.set_xlim([0, rm['box'][0]])
+    ax.set_ylim([0, rm['box'][1]])
+    ax.set_zlim([0, rm['box'][2]])
+
+    plt.show()
+
