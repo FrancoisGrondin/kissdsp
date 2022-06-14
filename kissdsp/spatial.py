@@ -83,3 +83,40 @@ def freefield(tdoas, frame_size=512):
 
     return AAs
 
+
+def rotmat(yaw, pitch, roll):
+    """
+    Generate a rotation matrix with given yaw, pitch and roll
+
+    Args:
+        yaw (float):
+            Yaw angle (in rad).
+        pitch (float):
+            Pitch angle (in rad).
+        roll (float):
+            Roll angle (in rad).
+
+    Returns:
+        (np.ndarray):
+            The rotation matrix (3, 3).
+
+    """
+
+    R = np.zeros((3,3), dtype=np.float32)
+
+    alpha = yaw
+    beta = pitch
+    gamma = roll    
+
+    R[0, 0] = np.cos(beta) * np.cos(gamma)
+    R[0, 1] = np.sin(alpha) * np.sin(beta) * np.cos(gamma) - np.cos(alpha) * np.sin(gamma)
+    R[0, 2] = np.cos(alpha) * np.sin(beta) * np.cos(gamma) + np.sin(alpha) * np.sin(gamma)
+    R[1, 0] = np.cos(beta) * np.sin(gamma)
+    R[1, 1] = np.sin(alpha) * np.sin(beta) * np.sin(gamma) + np.cos(alpha) * np.cos(gamma)
+    R[1, 2] = np.cos(alpha) * np.sin(beta) * np.sin(gamma) - np.sin(alpha) * np.cos(gamma)
+    R[2, 0] = -np.sin(beta)
+    R[2, 1] = np.sin(alpha) * np.cos(beta)
+    R[2, 2] = np.cos(alpha) * np.cos(beta)
+
+    return R
+
