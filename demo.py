@@ -56,8 +56,13 @@ def demo_reverb():
 	# Generate room impulse responses
 	hs = rb.rir(rm)
 
+	# Split early and late reverberation
+	hse, hsl = rb.earlylate(hs)
+
 	# Display room impulse responses
 	vz.rir(hs)
+	vz.rir(hse)
+	vz.rir(hsl)
 
 def demo_mask():
 
@@ -72,27 +77,21 @@ def demo_mask():
 	# Create room impulse responses
 	hs = rb.rir(rm)
 
-	# Modify the room to make it anechoic
-	rma = rb.anechoic(rm)
-
-	# Create room impulse responses for anechoic room
-	hsa = rb.rir(rma)
-
-	# Create room impulse responses for early reflections and late reverb only
-	hsr = hs - hsa
+	# Split early and late reverberation
+	hse, hsl = rb.earlylate(hs)
 
 	# Load speech audio
 	ss = src.read("audio/speeches.wav")
 
 	# Apply room impulse response
-	xsa = rb.conv(hsa, ss)
-	xsr = rb.conv(hsr, ss)
+	xse = rb.conv(hse, ss)
+	xsl = rb.conv(hsl, ss)
 
 	# Concatenate
-	xsar = mx.concatenate(xsa, xsr)
+	xsel = mx.concatenate(xse, xsl)
 
 	# Remix to get anechoic target vs reverb target + interference
-	xs = mx.remix(xsar, [[0], [1,2,3]])
+	xs = mx.remix(xsel, [[0], [1,2,3]])
 
 	# Get target and residual
 	ts = mx.source(xs, 0)

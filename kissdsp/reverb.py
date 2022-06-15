@@ -35,25 +35,6 @@ def room(mics, box, srcs, origin, alphas, c):
     return rm
 
 
-def anechoic(rm):
-    """
-    Convert room to anechoic room
-
-    Args:
-        rm (dict):
-            Room info
-
-    Returns:
-        (dict)
-            Room info
-    """
-
-    rm_ane = rm.copy()
-    rm_ane["alphas"] = np.ones(6)
-
-    return rm_ane
-    
-
 
 def rir(rm, sample_rate=16000, rir_size=4096):
     """
@@ -91,6 +72,41 @@ def rir(rm, sample_rate=16000, rir_size=4096):
 
     return hs
 
+
+def earlylate(hs, sample_rate=16000, early=0.05):
+    """
+    Split early reflection from late reverberation given the room impulse responses
+
+    Args:
+        hs (np.ndarray):
+            Room impulse responses (nb_of_sources, nb_of_channels, rir_size).
+        sample_rate (int):
+            Sample rate (in samples/sec).            
+        early (float):
+            Early reflection time (in seconds).
+
+    Return:
+        (np.ndarray)
+            Room impulse responses for early and late reverberation (nb_of_sources, nb_of_channels, rir_size).
+    """
+
+    nb_of_sources = hs.shape[0]
+    nb_of_channels = hs.shape[1]
+    rir_size = hs.shape[2]
+
+    es = np.zeros((nb_of_sources, nb_of_channels, rir_size), dtype=np.float32)
+    ls = np.zeros((nb_of_sources, nb_of_channels, rir_size), dtype=np.float32)
+
+    for source_index in range(0, nb_of_sources):
+
+        dp = np.amin(np.argmax(hs[source_index, :, :], axis=1))
+        split = dp + int(early * sample_rate)
+
+        es[source_index, :, :split] = hs[source_index, :, :split]
+        ls[source_index, :, (split+1):] = hs[source_index, :, (split+1):]
+
+    return es, ls
+    
 
 def conv(hs, ss):
     """
