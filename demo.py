@@ -4,17 +4,15 @@ import numpy as np
 import kissdsp.beamformer as bf
 import kissdsp.filterbank as fb
 import kissdsp.masking as mk
-import kissdsp.mixing as mx
 import kissdsp.reverb as rb
-import kissdsp.sink as snk
-import kissdsp.source as src
+import kissdsp.io as io
 import kissdsp.spatial as sp
 import kissdsp.visualize as vz
 
 def demo_waveform():
 
 	# Load speech audio
-	ss = src.read("audio/speeches.wav")
+	ss = io.read("audio/speeches.wav")
 
 	# Display waveforms
 	vz.wave(ss)
@@ -22,7 +20,7 @@ def demo_waveform():
 def demo_spectrogram():
 
 	# Load speech audio
-	ss = src.read("audio/speeches.wav")
+	ss = io.read("audio/speeches.wav")
 
 	# Compute short-time Fourier transform
 	Ss = fb.stft(ss)
@@ -64,49 +62,6 @@ def demo_reverb():
 	vz.rir(hse)
 	vz.rir(hsl)
 
-def demo_mask():
-
-	# Create a rectangular room with two sources
-	rm = rb.room(mics=np.asarray([[-0.05, -0.05, +0.00], [-0.05, +0.05, +0.00], [+0.05, -0.05, +0.00], [+0.05, +0.05, +0.00]]),
-	             box=np.asarray([10.0, 10.0, 2.5]),
-	             srcs=np.asarray([[2.0, 3.0, 1.0], [8.0, 7.0, 1.5]]),
-	             origin=np.asarray([4.0, 5.0, 1.25]),
-	             alphas=0.5 * np.ones(6),
-	             c=343.0)
-
-	# Create room impulse responses
-	hs = rb.rir(rm)
-
-	# Split early and late reverberation
-	hse, hsl = rb.earlylate(hs)
-
-	# Load speech audio
-	ss = src.read("audio/speeches.wav")
-
-	# Apply room impulse response
-	xse = rb.conv(hse, ss)
-	xsl = rb.conv(hsl, ss)
-
-	# Concatenate
-	xsel = mx.concatenate(xse, xsl)
-
-	# Remix to get anechoic target vs reverb target + interference
-	xs = mx.remix(xsel, [[0], [1,2,3]])
-
-	# Get target and residual
-	ts = mx.source(xs, 0)
-	rs = mx.source(xs, 1)
-
-	# Compute spectrograms
-	Ts = fb.stft(ts)
-	Rs = fb.stft(rs)
-
-	# Compute masks
-	Ms = mk.irm(Ts, Rs)
-
-	# Display
-	vz.mask(Ms)
-
 
 def demo_mvdr():
 
@@ -119,23 +74,23 @@ def demo_mvdr():
 	             c=343.0)
 
 	# Create room impulse responses
-	hs = rb.rir(rm)
+	hy = rb.rir(rm)
+	ht = hy[[0], :, :]
+	hr = hy[[1], :, :]
 
-	# Load speech audio
-	ss = src.read("audio/speeches.wav")
+	# Load first channel from speech audio
+	t = io.read("audio/speeches.wav")[[0], :]
 
 	# Generate white noise
-	ss[1, :] = 0.05 * src.white(nb_of_samples=ss.shape[1])
+	r = 0.05 * np.random.normal(size=t.shape)
+
+	# Combine input sources
+	y = np.concatenate([t,r], axis=0)
 
 	# Apply room impulse response
-	xs = rb.conv(hs, ss)
-
-	# Get target and residual
-	ts = mx.source(xs, 0)
-	rs = mx.source(xs, 1)
-
-	# Get mixture
-	ys = mx.collapse(xs)
+	ts = rb.conv(ht, t)
+	rs = rb.conv(hr, r)
+	ys = rb.conv(hy, y)
 
 	# Compute spectrograms
 	Ts = fb.stft(ts)
@@ -159,8 +114,8 @@ def demo_mvdr():
 	zs = fb.istft(Zs)
 
 	# Save audio
-	snk.write(ys, "audio/noisy.wav")
-	snk.write(zs, "audio/cleaned.wav")
+	io.write(ys, "audio/noisy.wav")
+	io.write(zs, "audio/cleaned.wav")
 
 
 def main():

@@ -36,6 +36,22 @@ def scm(Xs, Ms=None):
     return XXs
 
 
+def rtf(XXs, ch1, ch2):
+    """
+    Compute the Relative Transfer Function between channels ch1 and ch2
+
+    Args:
+        XXs (np.ndarray):
+            The spatial correlation matrix (nb_of_bins, nb_of_channels, nb_of_channels).
+
+    Returns:
+        (np.ndarray):
+            RTF between channels ch1 and ch2
+    """
+
+    return XXs[:, ch1, ch2]
+
+
 def steering(XXs):
     """
     Compute the Steering Vector (rank 1)

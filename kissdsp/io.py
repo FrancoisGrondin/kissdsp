@@ -20,19 +20,19 @@ def read(file_name):
     return data.T
 
 
-def white(nb_of_channels=1, nb_of_samples=90000):
+def write(xs, file_name):
     """
-    Generate a non-coherent white noise source
+    Write the audio file
 
     Args:
-        nb_of_channels (int):
-            Number of channels.
-        nb_of_samples (int):
-            Number of samples.
-
-    Returns:
         (np.ndarray):
-            Noise signal in the time domain (nb_of_channels, nb_of_samples).
+            Signals in the time domain (nb_of_channels, nb_of_samples).
+        file_name (string):
+            The file name of the audio file.
     """
-    return np.random.randn(nb_of_channels, nb_of_samples)
+
+    sf.write(file_name, xs.T, 16000)
+
+
+
 

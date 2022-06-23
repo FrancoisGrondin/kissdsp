@@ -192,7 +192,7 @@ def conv(hs, ss):
 
     Return:
         (np.ndarray)
-            Convolved signals for each source (nb_of_sources, nb_of_channels, nb_of_samples + rir_size - 1)
+            Convolved signals for each source (nb_of_channels, nb_of_samples + rir_size - 1)
     """
 
     nb_of_sources = hs.shape[0]
@@ -200,11 +200,11 @@ def conv(hs, ss):
     nb_of_samples = ss.shape[1]
     rir_size = hs.shape[2]
 
-    xs = np.zeros((nb_of_sources, nb_of_channels, nb_of_samples + rir_size - 1), dtype=np.float32)
+    xs = np.zeros((nb_of_channels, nb_of_samples + rir_size - 1), dtype=np.float32)
 
     for source_index in range(0, nb_of_sources):
         for channel_index in range(0, nb_of_channels):
-            xs[source_index, channel_index, :] = np.convolve(hs[source_index, channel_index, :], ss[source_index, :])
+            xs[channel_index, :] += np.convolve(hs[source_index, channel_index, :], ss[source_index, :])
 
     return xs
 
