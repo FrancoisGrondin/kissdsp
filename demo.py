@@ -9,18 +9,18 @@ import kissdsp.io as io
 import kissdsp.spatial as sp
 import kissdsp.visualize as vz
 
-def demo_waveform():
+def demo_waveform(file_in):
 
 	# Load speech audio
-	ss = io.read("audio/speeches.wav")
+	ss = io.read(file_in)
 
 	# Display waveforms
 	vz.wave(ss)
 
-def demo_spectrogram():
+def demo_spectrogram(file_in):
 
 	# Load speech audio
-	ss = io.read("audio/speeches.wav")
+	ss = io.read(file_in)
 
 	# Compute short-time Fourier transform
 	Ss = fb.stft(ss)
@@ -63,7 +63,7 @@ def demo_reverb():
 	vz.rir(hsl)
 
 
-def demo_mvdr():
+def demo_mvdr(file_in, file_out1, file_out2):
 
 	# Create a rectangular room with two sources
 	rm = rb.room(mics=np.asarray([[-0.05, -0.05, +0.00], [-0.05, +0.05, +0.00], [+0.05, -0.05, +0.00], [+0.05, +0.05, +0.00]]),
@@ -79,7 +79,7 @@ def demo_mvdr():
 	hr = hy[[1], :, :]
 
 	# Load first channel from speech audio
-	t = io.read("audio/speeches.wav")[[0], :]
+	t = io.read(file_in)[[0], :]
 
 	# Generate white noise
 	r = 0.05 * np.random.normal(size=t.shape)
@@ -114,21 +114,24 @@ def demo_mvdr():
 	zs = fb.istft(Zs)
 
 	# Save audio
-	io.write(ys, "audio/noisy.wav")
-	io.write(zs, "audio/cleaned.wav")
+	io.write(ys, file_out1)
+	io.write(zs, file_out2)
 
 
 def main():
 
 	parser = ap.ArgumentParser(description='Choose demo.')
 	parser.add_argument('--operation', choices=['waveform', 'spectrogram', 'room', 'reverb', 'mask', 'mvdr'])
+	parser.add_argument('--in1', type=str, default='')
+	parser.add_argument('--out1', type=str, default='')
+	parser.add_argument('--out2', type=str, default='')
 	args = parser.parse_args()
 
 	if args.operation == 'waveform':
-		demo_waveform()
+		demo_waveform(args.in1)
 
 	if args.operation == 'spectrogram':
-		demo_spectrogram()
+		demo_spectrogram(args.in1)
 
 	if args.operation == 'room':
 		demo_room()
@@ -136,11 +139,8 @@ def main():
 	if args.operation == 'reverb':
 		demo_reverb()
 
-	if args.operation == 'mask':
-		demo_mask()
-
 	if args.operation == 'mvdr':
-		demo_mvdr()
+		demo_mvdr(args.in1, args.out1, args.out2)
 
 if __name__ == "__main__":
 	main()
