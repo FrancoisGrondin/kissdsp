@@ -98,8 +98,8 @@ def demo_mvdr():
 	Ys = fb.stft(ys)
 
 	# Compute spatial correlation matrices
-	TTs = sp.scm(Ts)
-	RRs = sp.scm(Rs)
+	TTs = sp.scm(sp.xspec(Ts))
+	RRs = sp.scm(sp.xspec(Rs))
 
 	# Compute steering vector
 	vs = sp.steering(TTs)
