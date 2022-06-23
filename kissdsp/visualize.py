@@ -39,23 +39,23 @@ def spex(Xs):
     plt.show()
 
 
-def phase(Xs):
+def phase(XXs):
     """
     Display the phase between each pair
 
     Args:
-        Xs (np.ndarray):
-            Signals in the frequency domain (nb_of_channels, nb_of_frames, nb_of_bins).
+        XXs (np.ndarray):
+            Signals in the frequency domain (nb_of_channels, nb_of_channels, nb_of_frames, nb_of_bins).
     """
 
-    nb_of_channels = Xs.shape[0]
-    nb_of_frames = Xs.shape[1]
-    nb_of_bins = Xs.shape[2]
+    nb_of_channels = XXs.shape[0]
+    nb_of_frames = XXs.shape[2]
+    nb_of_bins = XXs.shape[3]
 
     for channel_index1 in range(0, nb_of_channels):
         for channel_index2 in range(0, nb_of_channels):
             plt.subplot(nb_of_channels, nb_of_channels, channel_index1 * nb_of_channels + channel_index2 + 1)
-            plt.imshow((np.angle(Xs[channel_index1, :, :] * np.conj(Xs[channel_index2, :, :]))).T,
+            plt.imshow((np.angle(XXs[channel_index1, channel_index2, :, :])).T,
                        aspect='auto', origin='lower')
     plt.show()
 
@@ -145,3 +145,26 @@ def room(rm):
 
     plt.show()
 
+
+def xcorr(xxs):
+    """
+    Display the cross correlation
+
+    Args:
+        xxs (np.ndarray):
+            Signals in the time domain (nb_of_channels, nb_of_channels, nb_of_frames, frame_size).
+    """
+
+    nb_of_channels = xxs.shape[0]
+    nb_of_frames = xxs.shape[2]
+    frame_size = xxs.shape[3]
+
+    for channel_index1 in range(0, nb_of_channels):
+        for channel_index2 in range(0, nb_of_channels):
+            plt.subplot(nb_of_channels, nb_of_channels, channel_index1 * nb_of_channels + channel_index2 + 1)
+            plt.imshow(xxs[channel_index1, channel_index2, :, :].T,
+                       aspect='auto', origin='lower')
+    plt.show()
+
+
+    

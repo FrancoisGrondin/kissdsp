@@ -3,6 +3,7 @@ import numpy as np
 
 import kissdsp.beamformer as bf
 import kissdsp.filterbank as fb
+import kissdsp.localization as loc
 import kissdsp.masking as mk
 import kissdsp.reverb as rb
 import kissdsp.io as io
@@ -118,10 +119,28 @@ def demo_mvdr(file_in, file_out1, file_out2):
 	io.write(zs, file_out2)
 
 
+def demo_gccphat(file_in):
+
+	# Load input audio
+	xs = io.read(file_in)
+
+	# Compute spectrograms
+	Xs = fb.stft(xs)
+
+	# Compute cross-spectrum
+	XXs = sp.xspec(Xs)
+
+	# Compute cross-correlation
+	xxs = loc.gccphat(XXs)
+
+	# Display cross-correlation
+	vz.xcorr(xxs)
+	
+
 def main():
 
 	parser = ap.ArgumentParser(description='Choose demo.')
-	parser.add_argument('--operation', choices=['waveform', 'spectrogram', 'room', 'reverb', 'mask', 'mvdr'])
+	parser.add_argument('--operation', choices=['waveform', 'spectrogram', 'room', 'reverb', 'mask', 'mvdr', 'gccphat'])
 	parser.add_argument('--in1', type=str, default='')
 	parser.add_argument('--out1', type=str, default='')
 	parser.add_argument('--out2', type=str, default='')
@@ -141,6 +160,9 @@ def main():
 
 	if args.operation == 'mvdr':
 		demo_mvdr(args.in1, args.out1, args.out2)
+
+	if args.operation == 'gccphat':
+		demo_gccphat(args.in1)
 
 if __name__ == "__main__":
 	main()
