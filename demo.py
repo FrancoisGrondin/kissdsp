@@ -5,6 +5,7 @@ import kissdsp.beamformer as bf
 import kissdsp.filterbank as fb
 import kissdsp.localization as loc
 import kissdsp.masking as mk
+import kissdsp.mixing as mix
 import kissdsp.reverb as rb
 import kissdsp.io as io
 import kissdsp.spatial as sp
@@ -135,12 +136,26 @@ def demo_gccphat(file_in):
 
 	# Display cross-correlation
 	vz.xcorr(xxs)
-	
+
+
+def demo_mixing(file_in):
+
+	# Load input audio
+	xs = io.read(file_in)
+
+	# Power levels
+	levels = np.asarray([0.0, 0.0, 0.0, 0.0])
+
+	# Mix
+	ys = mix.vol(mix.db(xs, levels), level=0.5)
+
+	vz.wave(xs)
+	vz.wave(ys)
 
 def main():
 
 	parser = ap.ArgumentParser(description='Choose demo.')
-	parser.add_argument('--operation', choices=['waveform', 'spectrogram', 'room', 'reverb', 'mask', 'mvdr', 'gccphat'])
+	parser.add_argument('--operation', choices=['waveform', 'spectrogram', 'room', 'reverb', 'mask', 'mvdr', 'gccphat', 'mix'])
 	parser.add_argument('--in1', type=str, default='')
 	parser.add_argument('--out1', type=str, default='')
 	parser.add_argument('--out2', type=str, default='')
@@ -163,6 +178,9 @@ def main():
 
 	if args.operation == 'gccphat':
 		demo_gccphat(args.in1)
+
+	if args.operation == 'mix':
+		demo_mixing(args.in1)
 
 if __name__ == "__main__":
 	main()
