@@ -5,7 +5,7 @@ import rir_generator as rirgen
 
 def room(mics, box, srcs, origin, alphas, c):
     """
-    Generate room characteristics
+    Generate room characteristics.
 
     Args:
         mics (np.ndarray):
@@ -23,7 +23,7 @@ def room(mics, box, srcs, origin, alphas, c):
 
     Returns:
         (dict):
-            Room info
+            Room info.
     """
 
     rm = {"mics": np.copy(mics),
@@ -34,6 +34,91 @@ def room(mics, box, srcs, origin, alphas, c):
           "c": c}
 
     return rm
+
+
+def margin(rm):
+    """
+    Compute the margin relative to sources/microphones positioning.
+
+    Args:
+        rm (dict):
+            Room info.
+
+    Return:
+        (float):
+            Margin (in m) between microphones/srcs and walls/ceiling/floor ().
+    """
+
+    mics = rm["mics"] + np.expand_dims(rm["origin"], axis=0)
+    srcs = rm["srcs"]
+
+    margin_mics = np.zeros((mics.shape[0], 6), dtype=np.float32)
+    margin_mics[:, 0] = np.abs(mics[:,0])
+    margin_mics[:, 1] = np.abs(rm["box"][0] - mics[:,0])
+    margin_mics[:, 2] = np.abs(mics[:,1])
+    margin_mics[:, 3] = np.abs(rm["box"][1] - mics[:,1])
+    margin_mics[:, 4] = np.abs(mics[:,2])
+    margin_mics[:, 5] = np.abs(rm["box"][2] - mics[:,2])
+
+    margin_srcs = np.zeros((srcs.shape[0], 6), dtype=np.float32)
+    margin_srcs[:, 0] = np.abs(srcs[:,0])
+    margin_srcs[:, 1] = np.abs(rm["box"][0] - srcs[:,0])
+    margin_srcs[:, 2] = np.abs(srcs[:,1])
+    margin_srcs[:, 3] = np.abs(rm["box"][1] - srcs[:,1])
+    margin_srcs[:, 4] = np.abs(srcs[:,2])
+    margin_srcs[:, 5] = np.abs(rm["box"][2] - srcs[:,2])
+
+    margin = min([np.min(margin_mics), np.min(margin_srcs)])
+
+    return margin
+
+
+def distance(rm):
+    """
+    Compute the distances between sources and origin of microphone array.
+
+    Args:
+        rm (dict):
+            Room info.
+
+    Return:
+        (np.ndarray):
+            Distance (in m) between each source and the origin of the microphone array (nb_of_sources,).
+    """
+
+    srcs = rm["srcs"]
+    micarray = rm["origin"]
+
+    dist_srcs = srcs - np.expand_dims(micarray, axis=0)
+
+    return dist_srcs
+
+
+def thetas(rm):
+    """
+    Compute the angles between sources.
+
+    Args:
+        rm (dict):
+            Room info.
+
+    Return:
+        (np.ndarray):
+            Angles (in degrees) between all sources (nb_of_sources, nb_of_sources).
+    """
+
+    srcs = rm["srcs"]
+    micarray = rm["origin"]    
+
+    theta_srcs = np.zeros((srcs.shape[0], srcs.shape[0]), dtype=np.float32)
+    
+    for src_index1 in range(0, srcs.shape[0]):
+        v1 = srcs[src_index1, :] - micarray
+        for src_index2 in range(0, srcs.shape[0]):
+            v2 = srcs[src_index2, :] - micarray
+            theta_srcs[src_index1, src_index2] = (180.0/np.pi) * np.arccos(np.dot(v1,v2)/(np.linalg.norm(v1)*np.linalg.norm(v2)+1e-20))
+
+    return theta_srcs
 
 
 def rir(rm, sample_rate=16000, rir_size=4096):

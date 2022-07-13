@@ -35,7 +35,7 @@ def demo_room():
 	# Create a rectangular room with one source
 	rm = rb.room(mics=np.asarray([[-0.05, -0.05, +0.00], [-0.05, +0.05, +0.00], [+0.05, -0.05, +0.00], [+0.05, +0.05, +0.00]]),
 	             box=np.asarray([6.0, 6.0, 2.5]),
-	             srcs=np.asarray([[1.0, 2.0, 1.0]]),
+	             srcs=np.asarray([[1.0, 2.0, 1.0], [4.0, 3.0, 1.5]]),
 	             origin=np.asarray([3.0, 3.0, 1.25]),
 	             alphas=0.5 * np.ones(6),
 	             c=343.0)
@@ -63,7 +63,6 @@ def demo_reverb():
 	vz.rir(hs)
 	vz.rir(hse)
 	vz.rir(hsl)
-
 
 def demo_mvdr(file_in, file_out1, file_out2):
 
@@ -144,13 +143,17 @@ def demo_mixing(file_in):
 	xs = io.read(file_in)
 
 	# Power levels
-	levels = np.asarray([0.0, 0.0, 0.0, 0.0])
+	pwr_levels = np.asarray([0.0, 0.0, 0.0, 0.0])
+
+	# Gain levels
+	gain_levels = np.asarray([-3.0, -3.0, -3.0, -3.0])
 
 	# Mix
-	ys = mix.vol(mix.db(xs, levels), level=0.5)
+	ys = mix.gain(mix.normalize(mix.pwr(xs, pwr_levels)), gain_levels)
 
 	vz.wave(xs)
 	vz.wave(ys)
+	
 
 def main():
 
