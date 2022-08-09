@@ -21,7 +21,7 @@ def crop(xs, duration):
 
 	if nb_of_samples > duration:
 		ys = xs[:, 0:duration]
-	else
+	else:
 		ys = np.zeros((nb_of_channels, duration), dtype=np.float32)
 		ys[:, 0:nb_of_samples] = xs
 
@@ -65,6 +65,20 @@ def window(xs, duration, offset):
 	If duration is less than nb_of_samples, then the signal is
 	extracted from sample offset * (nb_of_samples-duration) to sample
 	offset * (nb_of_samples-duration) + duration.
+
+	Args:
+		xs (np.ndarray):
+			Signals in the time domain (nb_of_channels, nb_of_samples).
+
+		duration (int):
+			Number of samples in the window.
+
+		offset (float):
+			Normalized offset (0.0 means beginning of signal, and 1.0 the end).
+
+	Returns:
+		(np.ndarray):
+			Signals in the time domain (nb_of_channels, nb_of_samples).
 	"""
 
 	nb_of_channels = xs.shape[0]
@@ -72,13 +86,13 @@ def window(xs, duration, offset):
 
 	if duration > nb_of_samples:
 
-		padding = offset * (duration - nb_of_samples)
+		padding = int(offset * (duration - nb_of_samples))
 		ys = np.zeros((nb_of_channels, duration), dtype=np.float32)
 		ys[:, padding:(nb_of_samples+padding)] = xs
 
 	else:
 
-		padding = offset * (nb_of_samples - duration)
+		padding = int(offset * (nb_of_samples - duration))
 		ys = xs[:, padding:(duration+padding)]
 
 	return ys

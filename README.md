@@ -9,13 +9,13 @@ pip3 install -r requirements.txt
 ### Load and display waveform for speech
 
 ```
-python3 demo.py --operation waveform --in1 audio/speeches.wav
+python3 demo.py --operation waveform --wave audio/speeches.wav
 ```
 
 ### Load and display spectrogram for speech
 
 ```
-python3 demo.py --operation spectrogram --in1 audio/speeches.wav
+python3 demo.py --operation spectrogram --wave audio/speeches.wav
 ```
 
 ### Display room configuration
@@ -30,9 +30,4 @@ python3 demo.py --operation room
 python3 demo.py --operation reverb
 ```
 
-### Apply MVDR beamforming
-
-```
-python3 demo.py --operation mvdr --in1 audio/speeches.wav --out1 audio/noisy.wav --out2 audio/cleaned.wav
-````
 

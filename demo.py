@@ -1,5 +1,8 @@
 import argparse as ap
+import json as js
 import numpy as np
+import os as os
+import random as rnd
 
 import kissdsp.beamformer as bf
 import kissdsp.filterbank as fb
@@ -153,22 +156,19 @@ def demo_mixing(file_in):
 
 	vz.wave(xs)
 	vz.wave(ys)
-	
 
 def main():
 
 	parser = ap.ArgumentParser(description='Choose demo.')
 	parser.add_argument('--operation', choices=['waveform', 'spectrogram', 'room', 'reverb', 'mask', 'mvdr', 'gccphat', 'mix'])
-	parser.add_argument('--in1', type=str, default='')
-	parser.add_argument('--out1', type=str, default='')
-	parser.add_argument('--out2', type=str, default='')
+	parser.add_argument('--wave', type=str, default='')
 	args = parser.parse_args()
 
 	if args.operation == 'waveform':
-		demo_waveform(args.in1)
+		demo_waveform(file_in=args.wave)
 
 	if args.operation == 'spectrogram':
-		demo_spectrogram(args.in1)
+		demo_spectrogram(file_in=args.wave)
 
 	if args.operation == 'room':
 		demo_room()
@@ -176,14 +176,14 @@ def main():
 	if args.operation == 'reverb':
 		demo_reverb()
 
-	if args.operation == 'mvdr':
-		demo_mvdr(args.in1, args.out1, args.out2)
+	#if args.operation == 'mvdr':
+	#	demo_mvdr(file_in=args.in1, args.out1, args.out2)
 
 	if args.operation == 'gccphat':
-		demo_gccphat(args.in1)
+		demo_gccphat(file_in=args.wave)
 
-	if args.operation == 'mix':
-		demo_mixing(args.in1)
+	#if args.operation == 'mix':
+	#	demo_mixing(file_in=args.in1)
 
 if __name__ == "__main__":
 	main()

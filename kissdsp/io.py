@@ -17,6 +17,9 @@ def read(file_name):
 
     data, samplerate = sf.read(file_name, dtype=np.float32)
 
+    if (len(data.shape) == 1):
+        data = np.expand_dims(data, 1)
+
     return data.T
 
 

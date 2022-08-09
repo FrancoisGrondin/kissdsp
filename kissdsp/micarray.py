@@ -44,3 +44,16 @@ def circular(nb_of_mics, diameter):
 	mics[:, 1] = (diameter/2) * np.sin(thetas)
 
 	return mics
+
+
+def respeaker_usb():
+
+	mics = np.zeros((4, 3), dtype=np.float32)
+
+	mics[0, 0] = -0.032
+	mics[1, 1] = -0.032
+	mics[2, 0] = +0.032
+	mics[3, 1] = +0.032
+
+	return mics
+
