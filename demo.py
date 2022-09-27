@@ -3,8 +3,10 @@ import json as js
 import numpy as np
 import os as os
 import random as rnd
+import matplotlib.pyplot as plt
 
 import kissdsp.beamformer as bf
+import kissdsp.calibration as cb
 import kissdsp.filterbank as fb
 import kissdsp.localization as loc
 import kissdsp.masking as mk
@@ -61,6 +63,8 @@ def demo_reverb():
 
 	# Split early and late reverberation
 	hse, hsl = rb.earlylate(hs)
+
+	#np.save('rir.npy', hs[0, 0, :])
 
 	# Display room impulse responses
 	vz.rir(hs)
@@ -157,10 +161,48 @@ def demo_mixing(file_in):
 	vz.wave(xs)
 	vz.wave(ys)
 
+
+def demo_calibration():
+
+
+	# Create a rectangular room with one source
+	rm = rb.room(mics=np.asarray([[0.0, 0.0, 0.0]]),
+	             box=np.asarray([10.0, 10.0, 2.5]),
+	             srcs=np.asarray([[2.0, 3.0, 1.0]]),
+	             origin=np.asarray([2.3, 3.2, 1.1]),
+	             alphas=0.5 * np.ones(6),
+	             c=343.0)
+	
+	# Generate room impulse responses
+	hs = rb.rir(rm)
+
+	# Split early and late reverberation
+	hse, hsl = rb.earlylate(hs)
+
+	# Create excitation signal
+	xs = cb.chirp(duration=600.0)	
+	
+	# Convolve 
+	ys = rb.conv(hs, xs)
+	ys += np.random.normal(scale=0.01, size=ys.shape)
+
+	# STFTs
+	Xs = fb.stft(xs, frame_size=4096, hop_size=512)
+	Ys = fb.stft(ys, frame_size=4096, hop_size=512)
+
+	hsEst = cb.sweep(Xs, Ys)
+
+
+	plt.subplot(2, 1, 1)
+	plt.plot(hs[0, 0, :])
+	plt.subplot(2, 1, 2)
+	plt.plot(hsEst[0, :])
+	plt.show()
+
 def main():
 
 	parser = ap.ArgumentParser(description='Choose demo.')
-	parser.add_argument('--operation', choices=['waveform', 'spectrogram', 'room', 'reverb', 'mask', 'mvdr', 'gccphat', 'mix'])
+	parser.add_argument('--operation', choices=['waveform', 'spectrogram', 'room', 'reverb', 'mask', 'mvdr', 'gccphat', 'mix', 'calibration'])
 	parser.add_argument('--wave', type=str, default='')
 	args = parser.parse_args()
 
@@ -184,6 +226,9 @@ def main():
 
 	#if args.operation == 'mix':
 	#	demo_mixing(file_in=args.in1)
+
+	if args.operation == 'calibration':
+		demo_calibration()
 
 if __name__ == "__main__":
 	main()
