@@ -187,11 +187,11 @@ def mvdr_npf(file_speech, file_noise, folder, nb_of_iterations):
 
 def main():
 
-	parser = ap.ArgumentParser(description='Choose demo.')
-	parser.add_argument('--speech', type=str, default='')
-	parser.add_argument('--noise', type=str, default='')
-	parser.add_argument('--folder', type=str, default='')
-	parser.add_argument('--nb_of_iterations', type=int, default=0)
+	parser = ap.ArgumentParser(description='Augment the data.')
+	parser.add_argument('--speech', type=str, default='', help='File which holds the list of all speech files.')
+	parser.add_argument('--noise', type=str, default='', help='File which holds the list of all noise files.')
+	parser.add_argument('--folder', type=str, default='', help='Folder to write the augmented data.')
+	parser.add_argument('--nb_of_iterations', type=int, default=0, help='Number of samples generated.')
 	args = parser.parse_args()
 
 	mvdr_npf(file_speech=args.speech, 

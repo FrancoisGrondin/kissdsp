@@ -180,18 +180,17 @@ def demo_calibration():
 	hse, hsl = rb.earlylate(hs)
 
 	# Create excitation signal
-	xs = cb.chirp(duration=600.0)	
+	xs = cb.chirp(duration=300.0)	
 	
 	# Convolve 
 	ys = rb.conv(hs, xs)
 	ys += np.random.normal(scale=0.01, size=ys.shape)
-
+	
 	# STFTs
 	Xs = fb.stft(xs, frame_size=4096, hop_size=512)
 	Ys = fb.stft(ys, frame_size=4096, hop_size=512)
 
 	hsEst = cb.sweep(Xs, Ys)
-
 
 	plt.subplot(2, 1, 1)
 	plt.plot(hs[0, 0, :])

@@ -4,17 +4,26 @@ import torch.nn.functional as F
 import torch.utils.data as data
 import torch.optim as optim
 
+import kissdsp.beamformer as bf
 import kissdsp.filterbank as fb
 import kissdsp.io as io
 import kissdsp.masking as mk
+import kissdsp.spatial as sp
+import kissdsp.visualize as vz
 
+import argparse as ap
+import numpy as np
 import os as os
+
+from tqdm import tqdm
 
 class Audio(data.Dataset):
 
 	def __init__(self, file_meta, frame_size, hop_size):
 
 		self.root = os.path.dirname(file_meta)
+		self.frame_size = frame_size
+		self.hop_size = hop_size
 
 		with open(file_meta) as f:
 			self.elements = f.read().splitlines()
@@ -25,7 +34,7 @@ class Audio(data.Dataset):
 
 	def __getitem__(self, idx):
 
-		xs = io.read(self.root + self.elements[idx])
+		xs = io.read(self.root + "/" + self.elements[idx])
 
 		nb_of_channels_times_2 = xs.shape[0]
 		nb_of_channels = int(nb_of_channels_times_2 / 2)
@@ -36,9 +45,9 @@ class Audio(data.Dataset):
 		xs_all = xs_target + xs_interf
 
 		# Compute STFTs
-		Xs_target = fb.stft(xs_target, hop_size=hop_size, frame_size=frame_size)
-		Xs_interf = fb.stft(xs_interf, hop_size=hop_size, frame_size=frame_size)
-		Xs_all = fb.stft(xs_all)
+		Xs_target = fb.stft(xs_target, hop_size=self.hop_size, frame_size=self.frame_size)
+		Xs_interf = fb.stft(xs_interf, hop_size=self.hop_size, frame_size=self.frame_size)
+		Xs_all = fb.stft(xs_all, hop_size=self.hop_size, frame_size=self.frame_size)
 
 		# Compute SCMs
 		XXs_target = sp.scm(sp.xspec(Xs_target))
@@ -57,13 +66,15 @@ class Audio(data.Dataset):
 		Ps_all = bf.avgpwr(Xs_all, ws)
 
 		# Compute ideal ratio mask
-		Ms_all = mk.irm(Ys_target, Ys_all)
+		Ms_all = mk.irm(Ys_target, Ys_interf)
 
 		# Generate features
-		inputs = np.log(np.abs(np.concatenate((Ys_all, Ps_all), axis=0)) ** 2 + 1e-10) - np.log(1e-10)
-		labels = Ms_all
+		beam = np.squeeze(Ys_all, axis=0)
+		avg = np.squeeze(Ps_all, axis=0)
+		mask = np.squeeze(Ms_all, axis=0)
 
-		return inputs, labels
+		return beam, avg, mask
+
 
 class Network(nn.Module):
 
@@ -87,10 +98,19 @@ class Network(nn.Module):
 							out_channels=int(self.frame_size/2+1),
 							kernel_size=1)
 
-	def forward(self, x):
+	def forward(self, beams, avgs):
 
-		# Permute: N x T x F x 2 > N x 2 x T x F
-		x = x.permute(0,3,1,2)
+		# Unsqueeze: N x T x F > N x 1 x T x F
+		beams = torch.unsqueeze(beams, dim=1)
+
+		# Unsqueeze: N x T x F > N x 1 x T x F
+		avgs = torch.unsqueeze(avgs, dim=1)
+		
+		# Concatenate (N x 1 x T x F) & (N x 1 x T x F) > N x 2 x T x F
+		x = torch.cat((beams, avgs) , dim=1)
+
+		# Compute amplitude in dB
+		x = torch.log(torch.abs(x) ** 2 + 1e-10) - torch.log(torch.abs(x) * 0 + 1e-10)
 
 		# Batch norm: N x 2 x T x F > N x 2 x T x F
 		x = self.bn(x)
@@ -124,6 +144,18 @@ class Network(nn.Module):
 
 		return x
 
+class Loss:
+
+	def __init__(self):
+
+		self.mseloss = nn.MSELoss()
+
+	def __call__(self, beams, masks_prediction, masks_target):
+
+		beams = torch.log(torch.abs(beams) ** 2 + 1e-10) - torch.log(torch.abs(beams) * 0 + 1e-10)
+
+		return self.mseloss(masks_prediction * beams, masks_target * beams)
+
 class Brain:
 
 	def __init__(self, dataset_train, dataset_eval, num_workers, shuffle, batch_size, frame_size, hop_size, hidden_size, num_layers, dropout):
@@ -142,7 +174,7 @@ class Brain:
 
 		# Create model, loss and optimizer
 		self.net = Network(frame_size=frame_size, hidden_size=hidden_size, num_layers=num_layers, dropout=dropout).to(self.device)
-		self.criterion = nn.MSELoss()
+		self.criterion = Loss()
 		self.optimizer = optim.Adam(self.net.parameters())
 
 	def load(self, file_network):
@@ -157,18 +189,20 @@ class Brain:
 
 		self.net.train()
 
-		for inputs, labels in tqdm(self.dload_train):
+		for beams, avgs, masks in tqdm(self.dload_train):
 
 			# Transfer to GPU
-			inputs = inputs.to(self.device)
-			labels = labels.to(self.device)
+			beams = beams.to(self.device)
+			avgs = avgs.to(self.device)
+			masks_target = masks.to(self.device)
 
 			# Zero gradients
 			self.optimizer.zero_grad()
 
 			# Forward + backward + optimize
-			predictions = self.net(inputs)
-			loss = self.criterion(predictions * inputs[:, :, :, 0], labels * inputs[:, :, :, 0])
+			masks_pred = self.net(beams, avgs)
+
+			loss = self.criterion(beams, masks_pred, masks_target)
 			loss.backward()
 			self.optimizer.step()
 
@@ -183,16 +217,20 @@ def main():
 	parser.add_argument('--dataset_eval', type=str, default='')
 	args = parser.parse_args()
 
+	dset_train = Audio(file_meta=args.dataset_train, frame_size=512, hop_size=128)
+
 	brain = Brain(dataset_train=args.dataset_train,
 				  dataset_eval=args.dataset_eval,
 				  num_workers=1,
 				  shuffle=True,
-				  batch_size=16,
+				  batch_size=1,
 				  frame_size=512,
 				  hop_size=128,
 				  hidden_size=128,
 				  num_layers=2,
 				  dropout=0.0)
+
+	brain.train()
 
 
 
