@@ -69,11 +69,12 @@ class Audio(data.Dataset):
 		Ms_all = mk.irm(Ys_target, Ys_interf)
 
 		# Generate features
+		clean = np.squeeze(Ys_target, axis=0)
 		beam = np.squeeze(Ys_all, axis=0)
 		avg = np.squeeze(Ps_all, axis=0)
 		mask = np.squeeze(Ms_all, axis=0)
 
-		return beam, avg, mask
+		return clean, beam, avg, mask
 
 
 class Network(nn.Module):
@@ -150,27 +151,38 @@ class Loss:
 
 		self.mseloss = nn.MSELoss()
 
-	def __call__(self, beams, masks_prediction, masks_target):
+	def __call__(self, beams, masks_pred, masks_target):
 
 		beams = torch.log(torch.abs(beams) ** 2 + 1e-10) - torch.log(torch.abs(beams) * 0 + 1e-10)
 
-		return self.mseloss(masks_prediction * beams, masks_target * beams)
+		return self.mseloss(masks_pred * beams, masks_target * beams)
 
 class Brain:
 
-	def __init__(self, dataset_train, dataset_eval, num_workers, shuffle, batch_size, frame_size, hop_size, hidden_size, num_layers, dropout):
+	def __init__(self, dataset_train, dataset_eval, dataset_test, num_workers, shuffle, batch_size, frame_size, hop_size, hidden_size, num_layers, dropout, diffcoh):
+
+		# Save hyperparameters
+		self.batch_size = batch_size
+		self.frame_size = frame_size
+		self.hop_size = hop_size
+		self.hidden_size = hidden_size
+		self.num_layers = num_layers
+		self.dropout = dropout
+		self.diffcoh = diffcoh
 
 		# Get CUDA if possible
 		torch.backends.cudnn.enabled = False
 		self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 		
 		# Create datasets
-		dset_train = Audio(file_meta=dataset_train, frame_size=frame_size, hop_size=hop_size)
-		dset_eval = Audio(file_meta=dataset_eval, frame_size=frame_size, hop_size=hop_size)
+		self.dset_train = Audio(file_meta=dataset_train, frame_size=frame_size, hop_size=hop_size)
+		self.dset_eval = Audio(file_meta=dataset_eval, frame_size=frame_size, hop_size=hop_size)
+		self.dset_test = Audio(file_meta=dataset_test, frame_size=frame_size, hop_size=hop_size)
 
 		# Create dataloaders
-		self.dload_train = data.DataLoader(dset_train, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
-		self.dload_eval = data.DataLoader(dset_eval, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
+		self.dload_train = data.DataLoader(self.dset_train, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
+		self.dload_eval = data.DataLoader(self.dset_eval, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
+		self.dload_test = data.DataLoader(self.dset_test, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
 
 		# Create model, loss and optimizer
 		self.net = Network(frame_size=frame_size, hidden_size=hidden_size, num_layers=num_layers, dropout=dropout).to(self.device)
@@ -187,11 +199,15 @@ class Brain:
 
 	def train(self):
 
+		# Total loss
+		total_loss = 0.0
+
+		# Enable back prop
 		self.net.train()
 
-		for beams, avgs, masks in tqdm(self.dload_train):
+		for _, beams, avgs, masks in tqdm(self.dload_train):
 
-			# Transfer to GPU
+			# Transfer to device (CPU or GPU)
 			beams = beams.to(self.device)
 			avgs = avgs.to(self.device)
 			masks_target = masks.to(self.device)
@@ -199,39 +215,159 @@ class Brain:
 			# Zero gradients
 			self.optimizer.zero_grad()
 
-			# Forward + backward + optimize
-			masks_pred = self.net(beams, avgs)
+			# Forward
+			if self.diffcoh == True:
+				masks_pred = self.net(beams, avgs)
+			else:
+				masks_pred = self.net(beams, beams)
 
+			# Compute weighted loss
 			loss = self.criterion(beams, masks_pred, masks_target)
+
+			# Perform back prop
 			loss.backward()
+
+			# Update parameters
 			self.optimizer.step()
+
+			# Add to total loss
+			total_loss += loss.item()
+
+		# Compute average loss
+		avg_loss = total_loss / len(self.dload_train)
+
+		return avg_loss
 
 	def eval(self):
 
-		pass
+		# Total loss
+		total_loss = 0.0
+
+		# Disable back prop
+		self.net.eval()
+
+		for _, beams, avgs, masks in tqdm(self.dload_eval):
+
+			# Transfer to device (CPU or GPU)
+			beams = beams.to(self.device)
+			avgs = avgs.to(self.device)
+			masks_target = masks.to(self.device)
+
+			# Forward
+			if self.diffcoh == True:
+				masks_pred = self.net(beams, avgs)
+			else:
+				masks_pred = self.net(beams, beams)
+
+			# Compute weighted loss
+			loss = self.criterion(beams, masks_pred, masks_target)
+
+			# Add to total loss
+			total_loss += loss.item()
+
+		# Compute average loss
+		avg_loss = total_loss / len(self.dload_eval)
+
+		return avg_loss
+
+	def test(self):
+
+		# Total PESQ
+		total_pesq = 0.0
+
+		# Disable back prop
+		self.net.eval()
+
+		for cleans, beams, avgs, masks in tqdm(self.dload_test):
+
+			# Transfer to device (CPU or GPU)
+			cleans = cleans.to(self.device)
+			beams = beams.to(self.device)
+			avgs = avgs.to(self.device)
+			masks_target = masks.to(self.device)
+
+			# Estimate mask
+			if self.diffcoh == True:
+				masks_pred = self.net(beams, avgs)
+			else:
+				masks_pred = self.net(beams, beams)
+
+			# Get clean signal
+			xs_clean = fb.istft(cleans, hop_size=self.hop_size)
+
+			# Get enhanced signal with oracle mask
+			xs_oracle = fb.istft(beams * masks_target, hop_size=self.hop_size)
+
+			# Get enhanced signal with predicted mask
+			xs_estimated = fb.istft(beams * masks_pred, hop_size=self.hop_size)
+
+	def peek(self, idx, dset):
+
+		# Disable back prop
+		self.net.eval()
+
+		# Load data
+		if (dset == 'train'):
+			clean, beam, avg, mask = self.dset_train[idx]
+		if (dset == 'eval'):
+			clean, beam, avg, mask = self.dset_eval[idx]
+		if (dset == 'test'):
+			clean, beam, avg, mask = self.dset_test[idx]
+
+		# Fix dimensions for batch
+		cleans = torch.unsqueeze(torch.from_numpy(clean), dim=0)
+		beams = torch.unsqueeze(torch.from_numpy(beam), dim=0)
+		avgs = torch.unsqueeze(torch.from_numpy(avg), dim=0)
+		masks_target = torch.unsqueeze(torch.from_numpy(mask), dim=0)
+
+		# Predict mask
+		if self.diffcoh == True:
+			masks_pred = self.net(beams, avgs)
+		else:
+			masks_pred = self.net(beams, beams)
+
+		# Return results
+		mask_pred = masks_pred.detach().numpy()
+		mask_target = masks_target.detach().numpy()
+
+		return mask_target, mask_pred
+
 
 def main():
 
 	parser = ap.ArgumentParser(description='Train/use network.')
 	parser.add_argument('--dataset_train', type=str, default='')
 	parser.add_argument('--dataset_eval', type=str, default='')
+	parser.add_argument('--dataset_test', type=str, default='')
+	parser.add_argument('--logbook', type=str, default='')
+	parser.add_argument('--epochs', type=int, default=1)
+	parser.add_argument('--batch_size', type=int, default=16)
+	parser.add_argument('--frame_size', type=int, default=512)
+	parser.add_argument('--hop_size', type=int, default=128)
+	parser.add_argument('--hidden_size', type=int, default=128)
+	parser.add_argument('--num_layers', type=int, default=2)
+	parser.add_argument('--dropout', type=float, default=0.0)
+	parser.add_argument('--diffcoh', type=bool, default=True)
 	args = parser.parse_args()
-
-	dset_train = Audio(file_meta=args.dataset_train, frame_size=512, hop_size=128)
 
 	brain = Brain(dataset_train=args.dataset_train,
 				  dataset_eval=args.dataset_eval,
-				  num_workers=1,
+				  dataset_test=args.dataset_test,
+				  num_workers=12,
 				  shuffle=True,
-				  batch_size=1,
-				  frame_size=512,
-				  hop_size=128,
-				  hidden_size=128,
-				  num_layers=2,
-				  dropout=0.0)
+				  batch_size=args.batch_size,
+				  frame_size=args.frame_size,
+				  hop_size=args.hop_size,
+				  hidden_size=args.hidden_size,
+				  num_layers=args.num_layers,
+				  dropout=args.dropout,
+				  diffcoh=args.diffcoh)
 
-	brain.train()
+	for epoch in range(0, args.epochs):
 
+		train_loss = brain.train()
+		eval_loss = brain.eval()
+	
 
 
 if __name__ == "__main__":
