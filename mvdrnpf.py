@@ -307,10 +307,10 @@ class Brain:
 		clean, beam, avg, mask = self.dset[idx]
 
 		# Fix dimensions for batch
-		cleans = torch.unsqueeze(torch.from_numpy(clean), dim=0)
-		beams = torch.unsqueeze(torch.from_numpy(beam), dim=0)
-		avgs = torch.unsqueeze(torch.from_numpy(avg), dim=0)
-		masks_target = torch.unsqueeze(torch.from_numpy(mask), dim=0)
+		cleans = torch.unsqueeze(torch.from_numpy(clean), dim=0).to(self.device)
+		beams = torch.unsqueeze(torch.from_numpy(beam), dim=0).to(self.device)
+		avgs = torch.unsqueeze(torch.from_numpy(avg), dim=0).to(self.device)
+		masks_target = torch.unsqueeze(torch.from_numpy(mask), dim=0).to(self.device)
 
 		# Predict mask
 		if self.diffcoh == True:
@@ -319,8 +319,8 @@ class Brain:
 			masks_pred = self.net(beams, beams)
 
 		# Return results
-		mask_pred = masks_pred.detach().numpy()
-		mask_target = masks_target.detach().numpy()
+		mask_pred = masks_pred.detach().cpu().numpy()
+		mask_target = masks_target.detach().cpu().numpy()
 
 		return mask_target, mask_pred
 
@@ -330,8 +330,10 @@ def main():
 	parser = ap.ArgumentParser(description='Train/use network.')
 	parser.add_argument('--dataset', type=str, default='')
 	parser.add_argument('--action', type=str, choices=['init', 'train', 'eval', 'peek'], default='train')
-	parser.add_argument('--model', type=str, default=None)
+	parser.add_argument('--model_in', type=str, default=None)
+	parser.add_argument('--model_out', type=str, default=None)
 	parser.add_argument('--idx', type=int, default=0)
+	parser.add_argument('--epochs', type=int, default=1)
 	args = parser.parse_args()
 
 	batch_size = 16
@@ -343,7 +345,7 @@ def main():
 	diffcoh = True
 
 	brain = Brain(dataset=args.dataset,
-				  num_workers=12,
+				  num_workers=16,
 				  shuffle=True,
 				  batch_size=batch_size,
 				  frame_size=frame_size,
@@ -355,22 +357,23 @@ def main():
 
 	if args.action == 'init':
 
-		brain.save(args.model)
+		brain.save(args.model_out)
 
 	if args.action == 'train':
 
-		brain.load(args.model)
-		brain.train()
-		brain.save(args.model)
+		brain.load(args.model_in)
+		for epoch in range(0, args.epochs):
+			brain.train()
+		brain.save(args.model_out)
 
 	if args.action == 'eval':
 
-		brain.load(args.model)
+		brain.load(args.model_in)
 		print(brain.eval())
 
 	if args.action == 'peek':
 
-		brain.load(args.model)
+		brain.load(args.model_in)
 		mask_target, mask_pred = brain.peek(args.idx)
 
 		vz.mask(np.concatenate((mask_target, mask_pred), axis=0))
