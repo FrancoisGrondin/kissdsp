@@ -14,6 +14,7 @@ import kissdsp.visualize as vz
 import argparse as ap
 import numpy as np
 import os as os
+import time as tm
 
 from tqdm import tqdm
 
@@ -32,7 +33,7 @@ class Audio(data.Dataset):
 
 		return len(self.elements)
 
-	def __getitem__(self, idx):
+	def __getitem__(self, idx):		
 
 		xs = io.read(self.root + "/" + self.elements[idx])
 
@@ -159,7 +160,7 @@ class Loss:
 
 class Brain:
 
-	def __init__(self, dataset_train, dataset_eval, dataset_test, num_workers, shuffle, batch_size, frame_size, hop_size, hidden_size, num_layers, dropout, diffcoh):
+	def __init__(self, dataset, num_workers, shuffle, batch_size, frame_size, hop_size, hidden_size, num_layers, dropout, diffcoh):
 
 		# Save hyperparameters
 		self.batch_size = batch_size
@@ -175,27 +176,23 @@ class Brain:
 		self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 		
 		# Create datasets
-		self.dset_train = Audio(file_meta=dataset_train, frame_size=frame_size, hop_size=hop_size)
-		self.dset_eval = Audio(file_meta=dataset_eval, frame_size=frame_size, hop_size=hop_size)
-		self.dset_test = Audio(file_meta=dataset_test, frame_size=frame_size, hop_size=hop_size)
+		self.dset = Audio(file_meta=dataset, frame_size=frame_size, hop_size=hop_size)
 
 		# Create dataloaders
-		self.dload_train = data.DataLoader(self.dset_train, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
-		self.dload_eval = data.DataLoader(self.dset_eval, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
-		self.dload_test = data.DataLoader(self.dset_test, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
+		self.dload = data.DataLoader(self.dset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
 
 		# Create model, loss and optimizer
 		self.net = Network(frame_size=frame_size, hidden_size=hidden_size, num_layers=num_layers, dropout=dropout).to(self.device)
 		self.criterion = Loss()
 		self.optimizer = optim.Adam(self.net.parameters())
 
-	def load(self, file_network):
+	def load(self, path):
 
-		pass
+		self.net.load_state_dict(torch.load(path))
 
-	def save (self, file_network):
+	def save(self, path):
 
-		pass
+		torch.save(self.net.state_dict(), path)
 
 	def train(self):
 
@@ -205,7 +202,7 @@ class Brain:
 		# Enable back prop
 		self.net.train()
 
-		for _, beams, avgs, masks in tqdm(self.dload_train):
+		for _, beams, avgs, masks in tqdm(self.dload):
 
 			# Transfer to device (CPU or GPU)
 			beams = beams.to(self.device)
@@ -234,7 +231,7 @@ class Brain:
 			total_loss += loss.item()
 
 		# Compute average loss
-		avg_loss = total_loss / len(self.dload_train)
+		avg_loss = total_loss / len(self.dload)
 
 		return avg_loss
 
@@ -246,7 +243,7 @@ class Brain:
 		# Disable back prop
 		self.net.eval()
 
-		for _, beams, avgs, masks in tqdm(self.dload_eval):
+		for _, beams, avgs, masks in tqdm(self.dload):
 
 			# Transfer to device (CPU or GPU)
 			beams = beams.to(self.device)
@@ -266,7 +263,7 @@ class Brain:
 			total_loss += loss.item()
 
 		# Compute average loss
-		avg_loss = total_loss / len(self.dload_eval)
+		avg_loss = total_loss / len(self.dload)
 
 		return avg_loss
 
@@ -278,7 +275,7 @@ class Brain:
 		# Disable back prop
 		self.net.eval()
 
-		for cleans, beams, avgs, masks in tqdm(self.dload_test):
+		for cleans, beams, avgs, masks in tqdm(self.dload):
 
 			# Transfer to device (CPU or GPU)
 			cleans = cleans.to(self.device)
@@ -301,18 +298,13 @@ class Brain:
 			# Get enhanced signal with predicted mask
 			xs_estimated = fb.istft(beams * masks_pred, hop_size=self.hop_size)
 
-	def peek(self, idx, dset):
+	def peek(self, idx):
 
 		# Disable back prop
 		self.net.eval()
 
-		# Load data
-		if (dset == 'train'):
-			clean, beam, avg, mask = self.dset_train[idx]
-		if (dset == 'eval'):
-			clean, beam, avg, mask = self.dset_eval[idx]
-		if (dset == 'test'):
-			clean, beam, avg, mask = self.dset_test[idx]
+		# Get item
+		clean, beam, avg, mask = self.dset[idx]
 
 		# Fix dimensions for batch
 		cleans = torch.unsqueeze(torch.from_numpy(clean), dim=0)
@@ -336,39 +328,52 @@ class Brain:
 def main():
 
 	parser = ap.ArgumentParser(description='Train/use network.')
-	parser.add_argument('--dataset_train', type=str, default='')
-	parser.add_argument('--dataset_eval', type=str, default='')
-	parser.add_argument('--dataset_test', type=str, default='')
-	parser.add_argument('--logbook', type=str, default='')
-	parser.add_argument('--epochs', type=int, default=1)
-	parser.add_argument('--batch_size', type=int, default=16)
-	parser.add_argument('--frame_size', type=int, default=512)
-	parser.add_argument('--hop_size', type=int, default=128)
-	parser.add_argument('--hidden_size', type=int, default=128)
-	parser.add_argument('--num_layers', type=int, default=2)
-	parser.add_argument('--dropout', type=float, default=0.0)
-	parser.add_argument('--diffcoh', type=bool, default=True)
+	parser.add_argument('--dataset', type=str, default='')
+	parser.add_argument('--action', type=str, choices=['init', 'train', 'eval', 'peek'], default='train')
+	parser.add_argument('--model', type=str, default=None)
+	parser.add_argument('--idx', type=int, default=0)
 	args = parser.parse_args()
 
-	brain = Brain(dataset_train=args.dataset_train,
-				  dataset_eval=args.dataset_eval,
-				  dataset_test=args.dataset_test,
+	batch_size = 16
+	frame_size = 512
+	hop_size = 128
+	hidden_size = 128
+	num_layers = 2
+	dropout = 0.0
+	diffcoh = True
+
+	brain = Brain(dataset=args.dataset,
 				  num_workers=12,
 				  shuffle=True,
-				  batch_size=args.batch_size,
-				  frame_size=args.frame_size,
-				  hop_size=args.hop_size,
-				  hidden_size=args.hidden_size,
-				  num_layers=args.num_layers,
-				  dropout=args.dropout,
-				  diffcoh=args.diffcoh)
+				  batch_size=batch_size,
+				  frame_size=frame_size,
+				  hop_size=hop_size,
+				  hidden_size=hidden_size,
+				  num_layers=num_layers,
+				  dropout=dropout,
+				  diffcoh=diffcoh)
 
-	for epoch in range(0, args.epochs):
+	if args.action == 'init':
 
-		train_loss = brain.train()
-		eval_loss = brain.eval()
-	
+		brain.save(args.model)
 
+	if args.action == 'train':
+
+		brain.load(args.model)
+		brain.train()
+		brain.save(args.model)
+
+	if args.action == 'eval':
+
+		brain.load(args.model)
+		print(brain.eval())
+
+	if args.action == 'peek':
+
+		brain.load(args.model)
+		mask_target, mask_pred = brain.peek(args.idx)
+
+		vz.mask(np.concatenate((mask_target, mask_pred), axis=0))
 
 if __name__ == "__main__":
 	main()
