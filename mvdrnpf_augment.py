@@ -18,7 +18,7 @@ import kissdsp.visualize as vz
 
 from tqdm import tqdm
 
-def mvdr_npf(file_speech, file_noise, folder, nb_of_iterations):
+def simulate(file_speech, file_noise, folder, mic_array, nb_of_iterations):
 
 	# Parameters
 	box_x_min = 5.0
@@ -35,9 +35,9 @@ def mvdr_npf(file_speech, file_noise, folder, nb_of_iterations):
 	d_min = 1.0
 	d_max = 5.0
 	speech_gain_min = 0.0
-	speech_gain_max = 15.0
+	speech_gain_max = 20.0
 	noise_gain_min = 0.0
-	noise_gain_max = 5.0
+	noise_gain_max = 10.0
 	vol_min = -20.0
 	vol_max = +0.0
 	duration = 90000
@@ -95,7 +95,20 @@ def mvdr_npf(file_speech, file_noise, folder, nb_of_iterations):
 			R = rb.rotmat(yaw=yaw, pitch=pitch, roll=roll)
 
 			# Create the microphone array
-			mics = ma.respeaker_usb()
+			if mic_array == 'respeaker_usb':
+				mics = ma.respeaker_usb()
+			if mic_array == 'respeaker_core':
+				mics = ma.respeaker_core()
+			if mic_array == 'matrix_creator':
+				mics = ma.matrix_creator()
+			if mic_array == 'matrix_voice':
+				mics = ma.matrix_voice()
+			if mic_array == 'minidsp_uma':
+				mics = ma.minidsp_uma()
+			if mic_array == 'microsoft_kinect':
+				mics = ma.microsoft_kinect()
+
+			# Rotate the array
 			mics_rot = (R @ mics.T).T
 
 			# Position the array randomly in the room
@@ -191,12 +204,14 @@ def main():
 	parser.add_argument('--speech', type=str, default='', help='File which holds the list of all speech files.')
 	parser.add_argument('--noise', type=str, default='', help='File which holds the list of all noise files.')
 	parser.add_argument('--folder', type=str, default='', help='Folder to write the augmented data.')
+	parser.add_argument('--micarray', type=str, choices=['respeaker_usb', 'respeaker_core', 'matrix_creator', 'matrix_voice', 'minidsp_uma'])
 	parser.add_argument('--nb_of_iterations', type=int, default=0, help='Number of samples generated.')
 	args = parser.parse_args()
 
-	mvdr_npf(file_speech=args.speech, 
+	simulate(file_speech=args.speech, 
 			 file_noise=args.noise,
 			 folder=args.folder,
+			 mic_array=args.micarray,
 			 nb_of_iterations=args.nb_of_iterations)
 
 if __name__ == "__main__":

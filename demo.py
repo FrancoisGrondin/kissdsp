@@ -10,6 +10,7 @@ import kissdsp.calibration as cb
 import kissdsp.filterbank as fb
 import kissdsp.localization as loc
 import kissdsp.masking as mk
+import kissdsp.micarray as ma
 import kissdsp.mixing as mix
 import kissdsp.reverb as rb
 import kissdsp.io as io
@@ -38,10 +39,10 @@ def demo_spectrogram(file_in):
 def demo_room():
 
 	# Create a rectangular room with one source
-	rm = rb.room(mics=np.asarray([[-0.05, -0.05, +0.00], [-0.05, +0.05, +0.00], [+0.05, -0.05, +0.00], [+0.05, +0.05, +0.00]]),
-	             box=np.asarray([6.0, 6.0, 2.5]),
-	             srcs=np.asarray([[1.0, 2.0, 1.0], [4.0, 3.0, 1.5]]),
-	             origin=np.asarray([3.0, 3.0, 1.25]),
+	rm = rb.room(mics=ma.minidsp_uma(),
+	             box=np.asarray([3.0, 3.0, 2.5]),
+	             srcs=np.asarray([[1.0, 2.0, 1.0], [2.0, 1.0, 1.5]]),
+	             origin=np.asarray([1.5, 1.5, 1.25]),
 	             alphas=0.5 * np.ones(6),
 	             c=343.0)
 

@@ -5,7 +5,7 @@ def mvdr(vs, NNs=None):
     """
     Generate beamformer weights with MVDR. We compute the following equation:
 
-    w(k) = phi_NN(k)^-1 d(k) / (d(k)^H phi_NN(k) d(k) )
+    w(k) = phi_NN(k)^-1 d(k) / (d(k)^H phi_NN(k)^-1 d(k) )
 
     Args:
         vs (np.ndarray):
