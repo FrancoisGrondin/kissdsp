@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.data as data
 import torch.optim as optim
+import torchmetrics.audio.pesq as pesq
 
 import kissdsp.beamformer as bf
 import kissdsp.filterbank as fb
@@ -269,8 +270,12 @@ class Brain:
 
 	def test(self):
 
+		# Load PESQ
+		estimator = pesq.PerceptualEvaluationSpeechQuality(16000, 'wb')
+
 		# Total PESQ
-		total_pesq = 0.0
+		total_oracle_pesq = 0.0
+		total_estimated_pesq = 0.0
 
 		# Disable back prop
 		self.net.eval()
@@ -297,6 +302,17 @@ class Brain:
 
 			# Get enhanced signal with predicted mask
 			xs_estimated = fb.istft(beams * masks_pred, hop_size=self.hop_size)
+
+			# Compute quality
+			total_oracle_pesq += estimator(xs_oracle, xs_clean)
+			total_estimated_pesq += estimator(xs_estimated, xs_clean)
+
+		# Compute average quality
+		avg_oracle_pesq = total_oracle_pesq / len(self.dload)
+		avg_estimated_pesq = total_estimated_pesq / len(self.dload)
+
+		return avg_oracle_pesq, avg_estimated_pesq
+
 
 	def peek(self, idx):
 
@@ -370,6 +386,11 @@ def main():
 
 		brain.load(args.model_in)
 		print(brain.eval())
+
+	if args.action == 'test':
+
+		brain.load(args.model_in)
+		print(brain.test())
 
 	if args.action == 'peek':
 
