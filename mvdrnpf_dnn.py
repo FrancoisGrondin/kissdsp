@@ -243,7 +243,7 @@ class Brain:
 		# Disable back prop
 		self.net.eval()
 
-		for _, beams, avgs, masks in tqdm(self.dload):
+		for _, beams, avgs, masks in self.dload:
 
 			# Transfer to device (CPU or GPU)
 			beams = beams.to(self.device)
@@ -334,6 +334,7 @@ def main():
 	parser.add_argument('--model_out', type=str, default=None)
 	parser.add_argument('--idx', type=int, default=0)
 	parser.add_argument('--epochs', type=int, default=1)
+	parser.add_argument('--diffcoh', type=bool, default=True)
 	args = parser.parse_args()
 
 	batch_size = 16
@@ -342,7 +343,6 @@ def main():
 	hidden_size = 128
 	num_layers = 2
 	dropout = 0.0
-	diffcoh = True
 
 	brain = Brain(dataset=args.dataset,
 				  num_workers=16,
@@ -353,7 +353,7 @@ def main():
 				  hidden_size=hidden_size,
 				  num_layers=num_layers,
 				  dropout=dropout,
-				  diffcoh=diffcoh)
+				  diffcoh=args.diffcoh)
 
 	if args.action == 'init':
 
