@@ -274,6 +274,7 @@ class Brain:
 		estimator = pesq.PerceptualEvaluationSpeechQuality(16000, 'wb')
 
 		# Total PESQ
+		total_beam_pesq = 0.0
 		total_oracle_pesq = 0.0
 		total_estimated_pesq = 0.0
 
@@ -297,6 +298,9 @@ class Brain:
 			# Get clean signal
 			xs_clean = fb.istft(cleans, hop_size=self.hop_size)
 
+			# Get beam signal no mask
+			xs_beam = fb.istft(beams, hop_size=self.hop_size)
+
 			# Get enhanced signal with oracle mask
 			xs_oracle = fb.istft(beams * masks_target, hop_size=self.hop_size)
 
@@ -304,14 +308,16 @@ class Brain:
 			xs_estimated = fb.istft(beams * masks_pred, hop_size=self.hop_size)
 
 			# Compute quality
+			total_beam_pesq += estimator(xs_beam, xs_clean)
 			total_oracle_pesq += estimator(xs_oracle, xs_clean)
 			total_estimated_pesq += estimator(xs_estimated, xs_clean)
 
 		# Compute average quality
+		avg_beam_pesq = total_beam_pesq / len(self.dload)
 		avg_oracle_pesq = total_oracle_pesq / len(self.dload)
 		avg_estimated_pesq = total_estimated_pesq / len(self.dload)
 
-		return avg_oracle_pesq, avg_estimated_pesq
+		return avg_beam_pesq, avg_oracle_pesq, avg_estimated_pesq
 
 
 	def peek(self, idx):
