@@ -116,11 +116,13 @@ def demo_mvdr(file_in):
 	# Perform beamforming
 	Zs = bf.beam(Ys, ws)
 
-	vz.spex(Ys)
-	vz.spex(Zs)
-
 	# Return to time domain
 	zs = fb.istft(Zs)
+
+	vz.spex(Ys)
+	vz.spex(Zs)
+	vz.wave(ys)
+	vz.wave(zs)
 
 
 def demo_gccphat(file_in):
