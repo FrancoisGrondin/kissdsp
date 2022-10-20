@@ -28,6 +28,34 @@ def mvdr(SSs, NNs):
     return ws
 
 
+def gev(SSs, NNs):
+    """
+    Generate beamformer weights with GEV. We compute the following equation:
+
+    w(k) = P{ phi_NN(k)^-1 phi_SS(k) }, where P{...} extracts the eigenvector with highest eigenvalue
+
+    Args:
+        SSs (np.ndarray):
+            The speech spatial covariance matrix (nb_of_bins, nb_of_channels, nb_of_channels).
+        NNs (np.ndarray):
+            The noise spatial covariance matrix (nb_of_bins, nb_of_channels, nb_of_channels).
+
+    Returns:
+        (np.ndarray):
+            The beamformer weights in the frequency domain (nb_of_bins, nb_of_channels).
+    """
+
+    nb_of_bins = SSs.shape[0]
+    nb_of_channels = SSs.shape[1]
+
+    NNsInv = np.linalg.inv(NNs)
+
+    eigvalues, eigvectors = np.linalg.eigh(NNsInv @ SSs)
+    ws = eigvectors[:, :, -1]
+
+    return ws
+
+
 def beam(Xs, ws):
     """
     Apply beamformer weights.
