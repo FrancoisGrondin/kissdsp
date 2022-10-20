@@ -1,35 +1,30 @@
 import numpy as np
 
 
-def mvdr(vs, NNs=None):
+def mvdr(SSs, NNs):
     """
     Generate beamformer weights with MVDR. We compute the following equation:
 
-    w(k) = phi_NN(k)^-1 d(k) / (d(k)^H phi_NN(k)^-1 d(k) )
+    w(k) = ( phi_NN(k)^-1 phi_SS(k) / trace{phi_NN(k)^-1 phi_SS(k)} ) u
 
     Args:
-        vs (np.ndarray):
-            The steering vector in the frequency domain (nb_of_bins, nb_of_channels).
+        SSs (np.ndarray):
+            The speech spatial covariance matrix (nb_of_bins, nb_of_channels, nb_of_channels).
         NNs (np.ndarray):
-            The noise spatial covariance matrix (nb_of_bins, nb_of_channels, nb_of_channels). If set to None, then the
-            noise spatial covariance matrix corresponds to identity matrices.
+            The noise spatial covariance matrix (nb_of_bins, nb_of_channels, nb_of_channels).
 
     Returns:
         (np.ndarray):
             The beamformer weights in the frequency domain (nb_of_bins, nb_of_channels).
     """
 
-    nb_of_bins = vs.shape[0]
-    nb_of_channels = vs.shape[1]
-
-    if NNs is None:
-        NNs = np.tile(np.expand_dims(np.identity(nb_of_channels), axis=0), reps=(nb_of_bins, 1, 1))
+    nb_of_bins = SSs.shape[0]
+    nb_of_channels = SSs.shape[1]
 
     NNsInv = np.linalg.inv(NNs)
-    ds = np.expand_dims(vs, axis=2)
-    dsH = np.conjugate(np.swapaxes(ds, -2, -1))
-    ws = np.squeeze(NNsInv @ ds / np.tile(dsH @ NNsInv @ ds, reps=(1, nb_of_channels, 1)), axis=2)
-
+    
+    ws = (NNsInv @ SSs / np.tile(np.expand_dims(np.trace(NNsInv @ SSs, axis1=1, axis2=2), axis=(1,2)), reps=(1, nb_of_channels, nb_of_channels)))[:, :, 0]
+    
     return ws
 
 

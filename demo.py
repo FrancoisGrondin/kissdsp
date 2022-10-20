@@ -72,7 +72,7 @@ def demo_reverb():
 	vz.rir(hse)
 	vz.rir(hsl)
 
-def demo_mvdr(file_in, file_out1, file_out2):
+def demo_mvdr(file_in):
 
 	# Create a rectangular room with two sources
 	rm = rb.room(mics=np.asarray([[-0.05, -0.05, +0.00], [-0.05, +0.05, +0.00], [+0.05, -0.05, +0.00], [+0.05, +0.05, +0.00]]),
@@ -91,7 +91,7 @@ def demo_mvdr(file_in, file_out1, file_out2):
 	t = io.read(file_in)[[0], :]
 
 	# Generate white noise
-	r = 0.05 * np.random.normal(size=t.shape)
+	r = 0.01 * np.random.normal(size=t.shape)
 
 	# Combine input sources
 	y = np.concatenate([t,r], axis=0)
@@ -110,21 +110,17 @@ def demo_mvdr(file_in, file_out1, file_out2):
 	TTs = sp.scm(sp.xspec(Ts))
 	RRs = sp.scm(sp.xspec(Rs))
 
-	# Compute steering vector
-	vs = sp.steering(TTs)
-
 	# Compute mvdr weights
-	ws = bf.mvdr(vs, RRs)
+	ws = bf.mvdr(TTs, RRs)
 
 	# Perform beamforming
 	Zs = bf.beam(Ys, ws)
 
+	vz.spex(Ys)
+	vz.spex(Zs)
+
 	# Return to time domain
 	zs = fb.istft(Zs)
-
-	# Save audio
-	io.write(ys, file_out1)
-	io.write(zs, file_out2)
 
 
 def demo_gccphat(file_in):
@@ -218,8 +214,8 @@ def main():
 	if args.operation == 'reverb':
 		demo_reverb()
 
-	#if args.operation == 'mvdr':
-	#	demo_mvdr(file_in=args.in1, args.out1, args.out2)
+	if args.operation == 'mvdr':
+		demo_mvdr(file_in=args.wave)
 
 	if args.operation == 'gccphat':
 		demo_gccphat(file_in=args.wave)
