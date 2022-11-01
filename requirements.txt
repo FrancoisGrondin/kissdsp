@@ -1,4 +1,0 @@
-matplotlib
-numpy
-rir_generator
-soundfile

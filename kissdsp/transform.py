@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def crop(xs, duration):
 	"""
 	Crop to the desired number of samples. If too short, pad with zeros.
