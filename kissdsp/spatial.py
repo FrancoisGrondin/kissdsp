@@ -29,56 +29,17 @@ def xspec(Xs):
     return XXs
 
 
-def scm(XXs):
+def scm(XXs, Ms=None):
     """
     Compute the Spatial Correlation Matrix
 
-    Args:
-        XXs (np.ndarray):
-            The cross spectrum (nb_of_channels, nb_of_channels, nb_of_frames, nb_of_bins)
-
-    Returns:
-        (np.ndarray):
-            The spatial correlation matrix (nb_of_bins, nb_of_channels, nb_of_channels)
-    """
-
-    Cs = np.transpose(np.mean(XXs, axis=2), (2, 0, 1))
-
-    return Cs
-
-
-def scmw(XXs, Ms):
-    """
-    Compute the Spatial Correlation Matrix using Ideal Ratio Masks
+    If mask is provided, weight with the mask. If not assume there is no mask.
 
     Args:
         XXs (np.ndarray):
             The cross spectrum (nb_of_channels, nb_of_channels, nb_of_frames, nb_of_bins)
         Ms (np.ndarray):
-            Ideal ratio mask (1, nb_of_frames, nb_of_bins)
-
-    Returns:
-        (np.ndarray):
-            The spatial correlation matrix (nb_of_bins, nb_of_channels, nb_of_channels)
-    """
-
-    nb_of_channels = XXs.shape[0]
-
-    MMs = np.tile(np.expand_dims(Ms, axis=0), (nb_of_channels, nb_of_channels, 1, 1))
-    Cs = np.transpose(np.sum(XXs * MMs, axis=2) / np.sum(MMs, axis=2), (2, 0, 1))
-
-    return Cs
-
-
-def scmxw(XXs, Ms):
-    """
-    Compute the Spatial Correlation Matrices using Ideal Ratio Masks
-
-    Args:
-        XXs (np.ndarray):
-            The cross spectrum (nb_of_channels, nb_of_channels, nb_of_frames, nb_of_bins)
-        Ms (np.ndarray)
-            Ideal ratio mask (1, nb_of_frames, nb_of_bins)
+            Ideal ratio mask (1, nb_of_frames, nb_of_bins)            
 
     Returns:
         (np.ndarray):
@@ -89,40 +50,11 @@ def scmxw(XXs, Ms):
     nb_of_frames = XXs.shape[2]
     nb_of_bins = XXs.shape[3]
 
+    if Ms is None:
+        Ms = np.ones((1, nb_of_frames, nb_of_bins), dtype=np.float32)
+
     MMs = np.tile(np.expand_dims(Ms, axis=0), (nb_of_channels, nb_of_channels, 1, 1))
-    X2s = np.expand_dims(np.sum(np.abs(np.diagonal(XXs, axis1=0, axis2=1)), axis=2), axis=0)
-
-    E_t_tt = np.sum(Ms * Ms * X2s, axis=(0, 1))
-    E_t_ii = np.sum(Ms * (1-Ms) * X2s, axis=(0, 1))
-    E_i_tt = np.sum((1-Ms) * Ms * X2s, axis=(0, 1))
-    E_i_ii = np.sum((1-Ms) * (1-Ms) * X2s, axis=(0, 1))
-
-    Phi_t = np.transpose(np.sum(MMs * XXs, axis=2), (2, 0, 1))
-    Phi_i = np.transpose(np.sum((1-MMs) * XXs, axis=2), (2, 0, 1))
-
-    E = np.zeros((nb_of_bins, 2, 2), dtype=np.float32)
-    E[:, 0, 0] = E_t_tt
-    E[:, 0, 1] = E_t_ii
-    E[:, 1, 0] = E_i_tt
-    E[:, 1, 1] = E_i_ii
-
-    Einv = np.linalg.inv(E)
-
-    a = np.tile(np.expand_dims(Einv[:, 0, 0], axis=(1,2)), (1, nb_of_channels, nb_of_channels))
-    b = np.tile(np.expand_dims(Einv[:, 0, 1], axis=(1,2)), (1, nb_of_channels, nb_of_channels))
-    c = np.tile(np.expand_dims(Einv[:, 1, 0], axis=(1,2)), (1, nb_of_channels, nb_of_channels))
-    d = np.tile(np.expand_dims(Einv[:, 1, 1], axis=(1,2)), (1, nb_of_channels, nb_of_channels))
-
-    phi_tt = a * Phi_t + b * Phi_i
-    phi_ii = c * Phi_t + d * Phi_i
-
-    E_tt = np.sum(Ms * X2s, axis=(0, 1))
-    E_ii = np.sum((1-Ms) * X2s, axis=(0, 1))
-
-    Phi_tt = np.tile(np.expand_dims(E_tt, axis=(1,2)), (nb_of_channels, nb_of_channels)) * phi_tt
-    Phi_ii = np.tile(np.expand_dims(E_ii, axis=(1,2)), (nb_of_channels, nb_of_channels)) * phi_ii
-
-    Cs = Phi_tt
+    Cs = np.transpose(np.sum(XXs * MMs, axis=2) / np.sum(MMs, axis=2), (2, 0, 1))
 
     return Cs
 
