@@ -48,13 +48,16 @@ def phase(XXs):
             Signals in the frequency domain (nb_of_channels, nb_of_channels, nb_of_frames, nb_of_bins).
     """
 
-    nb_of_channels = XXs.shape[0]
+    nb_of_channels1 = XXs.shape[0]
+    nb_of_channels2 = XXs.shape[1]
     nb_of_frames = XXs.shape[2]
     nb_of_bins = XXs.shape[3]
 
-    for channel_index1 in range(0, nb_of_channels):
-        for channel_index2 in range(0, nb_of_channels):
-            plt.subplot(nb_of_channels, nb_of_channels, channel_index1 * nb_of_channels + channel_index2 + 1)
+    pair_index = 0
+    for channel_index1 in range(0, nb_of_channels1):
+        for channel_index2 in range(0, nb_of_channels2):
+            pair_index += 1
+            plt.subplot(nb_of_channels1, nb_of_channels2, pair_index)
             plt.imshow((np.angle(XXs[channel_index1, channel_index2, :, :])).T,
                        aspect='auto', origin='lower')
     plt.show()
