@@ -32,7 +32,6 @@ if args.micarray == 'introlab_sammy':
 
 # Create sphere around the array
 doas = ds.sphere()
-doas = doas[np.abs(doas[:, 2]) < 0.5, :]
 
 # Generate TDoAs for freefield propagation
 tdoas = ds.delay(doas=doas, mics=mics)
