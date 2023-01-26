@@ -71,7 +71,7 @@ def srpphat(XXs, tdoas, eps=1e-20):
 
 			Ws = Ws1 * np.conj(Ws2)
 			XX = XXs[channel_index1, channel_index2, :, :]
-			Es += np.real((XX / (np.abs(XX) + eps)) @ Ws)
+			Es += np.clip(np.real((XX / (np.abs(XX) + eps)) @ Ws), a_min=0.0, a_max=None)
 
 	Es /= frame_size * nb_of_channels * (nb_of_channels-1) / 2
 

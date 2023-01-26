@@ -32,6 +32,7 @@ if args.micarray == 'introlab_sammy':
 
 # Create sphere around the array
 doas = ds.sphere()
+doas = doas[np.abs(doas[:, 2]) < 0.5, :]
 
 # Generate TDoAs for freefield propagation
 tdoas = ds.delay(doas=doas, mics=mics)
@@ -50,6 +51,8 @@ acimg = lc.srpphat(XXs, tdoas)
 
 # Get potential sources
 pots = doas[np.argmax(acimg, axis=1), :]
+
+print(tdoas[1053, :])
 
 # Get energy
 Es = np.amax(acimg, axis=1)
