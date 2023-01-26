@@ -51,8 +51,6 @@ acimg = lc.srpphat(XXs, tdoas)
 # Get potential sources
 pots = doas[np.argmax(acimg, axis=1), :]
 
-print(tdoas[1053, :])
-
 # Get energy
 Es = np.amax(acimg, axis=1)
 
