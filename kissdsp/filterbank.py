@@ -62,6 +62,46 @@ def istft(Xs, hop_size=128):
         xs[:, sample_start:sample_stop] += np.fft.irfft(Xs[:, i, :]) * ws
 
     return xs
-    
+
+
+def dft(frame_size):
+    """
+    Generate Discrete Fourier Transform matrix.
+
+    Args:
+        frame_size (int):
+            Number of samples in the transform.
+    Returns:
+        (np.ndarray):
+            The time-frequency matrix (nb_of_bins, nb_of_samples).
+    """
+
+    ns = np.arange(0, frame_size)
+    ks = np.arange(0, int(frame_size/2)+1)
+
+    W = np.exp(-1j * 2 * np.pi * np.expand_dims(ks, axis=1) @ np.expand_dims(ns, axis=0) / frame_size)
+
+    return W
+
+
+def idft(frame_size):
+    """
+    Generate inverse Discrete Fourier Transform matrix.
+
+    Args:
+        frame_size (int):
+            Number of samples in the transform.
+    Returns:
+        (np.ndarray):
+            The time-frequency matrix (nb_of_samples, nb_of_bins).
+    """
+
+    ns = np.arange(0, frame_size)
+    ks = np.arange(0, int(frame_size/2)+1)
+
+    W = np.exp(1j * 2 * np.pi * np.expand_dims(ns, axis=1) @ np.expand_dims(ks, axis=0) / frame_size)
+
+    return W
+
 
 

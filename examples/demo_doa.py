@@ -6,6 +6,7 @@ import kissdsp.doas as ds
 import kissdsp.filterbank as fb
 import kissdsp.io as io
 import kissdsp.localization as lc
+import kissdsp.masking as mk
 import kissdsp.micarray as ma
 import kissdsp.reverb as rb
 import kissdsp.spatial as sp
@@ -38,7 +39,7 @@ hr = hy[[1], :, :]
 t = io.read(args.wave)[[0], :]
 
 # Generate white noise
-r = 0.05 * np.random.normal(size=t.shape)
+r = 0.01 * np.random.normal(size=t.shape)
 
 # Combine input sources
 y = np.concatenate([t,r], axis=0)
@@ -54,30 +55,34 @@ Rs = fb.stft(rs)
 Ys = fb.stft(ys)
 
 # Compute spatial correlation matrices
-TTs = sp.scm(sp.xspec(Ts))
-RRs = sp.scm(sp.xspec(Rs))
 YYs = sp.scm(sp.xspec(Ys))
+
+# Compute mask
+Ms = np.expand_dims(mk.irm(Ts, Rs)[0, :, :], axis=0)
+RRs = sp.scm(sp.xspec(Ys), (1.0 - Ms))
+Ns = Ys * np.tile((1.0 - Ms), (mics.shape[0], 1, 1))
+NNs = sp.scm(sp.xspec(Ns))
 
 # Localization
 doas = ds.circle()
 tdoas = ds.delay(doas, mics)
 
-SSs = YYs @ np.linalg.inv(RRs)
+SSs = np.linalg.inv(RRs) @ YYs
+SSs2 = np.linalg.inv(NNs) @ YYs
 
-phis_TTs = np.expand_dims(np.transpose(TTs, (1, 2, 0)), axis=2)
-phis_RRs = np.expand_dims(np.transpose(RRs, (1, 2, 0)), axis=2)
 phis_YYs = np.expand_dims(np.transpose(YYs, (1, 2, 0)), axis=2)
 phis_SSs = np.expand_dims(np.transpose(SSs, (1, 2, 0)), axis=2)
+phis_SSs2 = np.expand_dims(np.transpose(SSs2, (1, 2, 0)), axis=2)
 
-Es_noise = lc.srpphat(phis_RRs, tdoas)
-Es_target = lc.srpphat(phis_TTs, tdoas)
 Es_mix = lc.srpphat(phis_YYs, tdoas)
-Es_filtered = lc.srpphat(phis_SSs, tdoas)
+Es_speech = lc.srpphat(phis_SSs, tdoas)
+Es_speech2 = lc.srpphat(phis_SSs2, tdoas)
 
 plt.plot(np.squeeze(Es_mix))
+plt.plot(np.squeeze(Es_speech))
+plt.plot(np.squeeze(Es_speech2))
 plt.axvline(x=53, color='g')
 plt.axvline(x=223, color='r')
-plt.plot(np.squeeze(Es_filtered))
 plt.xlabel('Azimuth')
 plt.ylabel('Energy')
 plt.show()
