@@ -59,6 +59,49 @@ def scm(XXs, Ms=None):
     return Cs
 
 
+def oscm(XXs, Ms=None, alpha=0.1):
+    """
+    Compute the Online Spatial Correlation Matrix
+
+    If mask is provided, weight with the mask. If not assume there is no mask.
+
+    Args:
+        XXs (np.ndarray):
+            The cross spectrum (nb_of_channels, nb_of_channels, nb_of_frames, nb_of_bins)
+        Ms (np.ndarray):
+            Ideal ratio mask (1, nb_of_frames, nb_of_bins)
+        alpha (float):
+            Adaptation rate (between 0 and 1)
+
+    Returns:
+        (np.ndarray):
+            The online spatial correlation matrix (nb_of_frames, nb_of_bins, nb_of_channels, nb_of_channels)
+    """
+
+    nb_of_channels = XXs.shape[0]
+    nb_of_frames = XXs.shape[2]
+    nb_of_bins = XXs.shape[3]
+
+    if Ms is None:
+        Ms = np.ones((1, nb_of_frames, nb_of_bins), dtype=np.float32)
+
+    MMs = np.tile(np.expand_dims(Ms, axis=0), (nb_of_channels, nb_of_channels, 1, 1))
+
+    XXMMs = XXs * MMs
+
+    # Loop for each frame: not very efficient, should be improved
+    Cs = np.zeros((nb_of_frames, nb_of_bins, nb_of_channels, nb_of_channels), dtype=np.csingle)
+
+    C = np.zeros((nb_of_bins, nb_of_channels, nb_of_channels), dtype=np.csingle)
+
+    for frame_index in range(nb_of_frames):
+        C *= (1 - alpha)
+        C += alpha * np.transpose(XXMMs[:, :, frame_index, :], (2, 0, 1))
+        Cs[frame_index, :, :, :] = C
+
+    return Cs    
+
+
 def steering(Cs):
     """
     Compute the Steering Vector (rank 1)
