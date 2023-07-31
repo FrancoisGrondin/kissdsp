@@ -56,6 +56,55 @@ def gev(SSs, NNs):
     return ws
 
 
+def pfm(Xs, ws, phase_threshold=10):
+    """
+    Apply phase-based frequency masking.
+
+    Args:
+        Xs (np.ndarray):
+            The time-frequency representation (nb_of_channels, nb_of_frames, nb_of_bins).
+        ws (np.ndarray):
+            The steering vector in the frequency domain (nb_of_bins, nb_of_channels).
+        phase_threshold (scalar):
+            Phase difference threshold (in degrees) below which a frequency belongs to SOI.
+
+    Returns:
+        (np.ndarray):
+            The time-frequency representation of both the SOI and the noise (2, nb_of_frames, nb_of_bins).
+    """
+
+    nb_of_channels = Xs.shape[0]
+    nb_of_frames = Xs.shape[1]
+    nb_of_bins = Xs.shape[2]
+    nb_of_phasediffs = int((nb_of_channels*(nb_of_channels-1) / 2))
+
+    # applying steering vector to align input channels towards SOI
+    Xs = np.moveaxis(Xs, 0, -1)
+    ws = np.tile(ws, reps=(nb_of_frames, 1, 1))
+    Xs_aligned = np.conj(ws) * Xs
+
+    # calculating average phase difference for each frequency bin
+    Xs_phases = np.angle(Xs_aligned, deg=True)
+    phase_diffs = np.zeros((nb_of_frames,nb_of_bins,nb_of_phasediffs))
+    diff_i = 0
+    for i in range(nb_of_channels):
+        for j in range(i+1, nb_of_channels):
+            phase_diffs[:,:,diff_i] = np.abs(Xs_phases[:,:,i] - Xs_phases[:,:,j])
+            diff_i += 1
+    phase_diffs[phase_diffs > 180] = np.abs(360-phase_diffs[phase_diffs > 180])
+    phase_avgdiffs = np.mean(phase_diffs,axis=2)
+
+    # masking reference microphone based on phase difference threshold to obtain:
+    # - the SOI
+    Ys = np.copy(Xs[:,:,0])
+    Ys[phase_avgdiffs > phase_threshold] = 0.0
+    # - the noise
+    Is = np.copy(Xs[:,:,0])
+    Is[phase_avgdiffs <= phase_threshold] = 0.0
+
+    return np.concatenate((np.expand_dims(Ys,axis=0),np.expand_dims(Is,axis=0)),axis=0)
+
+
 def beam(Xs, ws):
     """
     Apply beamformer weights.
