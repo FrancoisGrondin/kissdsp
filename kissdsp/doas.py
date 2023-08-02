@@ -32,6 +32,23 @@ def delay(doas, mics, c=343.0, sample_rate=16000):
             
     return tdoas
 
+def normalize(doas):
+	"""
+	Normalizes each doa to ensure it has a unit magnitude
+
+	Args:
+		doas (np.ndarray):
+			The directions of arrival (nb_of_doas, 3).
+
+	Returns:
+		(np.ndarray):
+			The directions of arrival (normalised magnitude) (nb_of_doas, 3)
+	"""
+
+	dist = np.sqrt(np.sum(doas ** 2, axis=1))
+	doas_normalized = doas / np.tile(np.expand_dims(dist, axis=1) + 1e-20, (1,3))
+
+	return doas_normalized
 
 def circle(points_count=360):
 	"""
@@ -167,3 +184,46 @@ def sphere(levels_count=4):
 		pts /= np.repeat(np.expand_dims(np.sqrt(np.sum(np.power(pts,2.0), axis=1)), axis=1), 3, axis=1)
 
 	return pts
+
+def plane(x_range=5.0, y_range=5.0, z_value=3.0, x_count=101, y_count=101):
+	"""
+	Definition of a plane for localization.
+
+	Args:
+		x_range (scalar):
+			The x range for the plane.
+		y_range (scalar):
+			The y range for the plane.
+		z_value (scalar):
+			The z position of the plane.
+		x_count (scalar):
+			The number of points to discretize the plane on the x-axis.
+		y_count (scalar):
+			The number of points to discretize the plane on the y-axis.
+
+	Returns:
+		(np.ndarray):
+			The plane (nb_of_points, 3)
+	"""
+
+	x = np.linspace(-x_range/2, +x_range/2, x_count)
+	y = np.linspace(-y_range/2, +y_range/2, y_count)
+	xv, yv = np.meshgrid(x, y, indexing='ij')
+	
+	pts = np.zeros((x_count*y_count, 3), dtype=np.float32)
+	pts[:, 0] = np.reshape(xv, (x_count*y_count,))
+	pts[:, 1] = np.reshape(yv, (x_count*y_count,))
+	pts[:, 2] = z_value
+
+	return pts
+
+
+
+
+
+
+
+
+
+
+

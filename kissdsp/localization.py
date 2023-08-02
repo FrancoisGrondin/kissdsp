@@ -78,4 +78,17 @@ def srpphat(XXs, tdoas, eps=1e-20):
 	return Es
 
 
+def music(XXs, tdoas):
+	"""
+	Perform Multiple Signal Classification (MUSIC)
+
+	Args:
+		XXs (np.ndarray):
+			The cross spectrum (nb_of_channels, nb_of_channels, nb_of_frames, nb_of_bins).
+		tdoas (np.ndarray):
+			Time difference of arrivals (nb_of_doas, nb_of_channels).
+	"""
+
+	pass
+
 

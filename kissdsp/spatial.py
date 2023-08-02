@@ -1,5 +1,6 @@
 import numpy as np
 
+import matplotlib.pyplot as plt
 
 def xspec(Xs):
     """
@@ -150,6 +151,36 @@ def freefield(tdoas, frame_size=512):
     return AAs
 
 
+def diagload(Cs, gamma=0.01, epsilon=1e-20):
+    """
+    Load the spatial correlation matrix with a diagonal to avoid singularity
+
+    Cs' = Cs + (gamma * trace(Cs) + epsilon) * I
+
+    Args:
+        Cs (np.ndarray):
+            The spatial correlation matrix (nb_of_bins, nb_of_channels, nb_of_channels).
+        gamma (float):
+            Gain applied to the trace of the spatial correlation matrix to set energy of the identity matrix.
+        epsilon (float):
+            Offset to add the identity matrix.
+
+    Returns:
+        (np.ndarray):
+            The spatial correlation matrix (nb_of_bins, nb_of_channels, nb_of_channels).
+    """
+
+    nb_of_bins = Cs.shape[0]
+    nb_of_channels = Cs.shape[1]
+
+    tr = np.expand_dims(np.expand_dims(np.trace(Cs, axis1=1, axis2=2), axis=1), axis=1)
+    trs = np.tile(tr, (1, nb_of_channels, nb_of_channels))
+    I = np.expand_dims(np.eye(nb_of_channels), axis=0)
+    Is = np.tile(I, (nb_of_bins, 1, 1))
+
+    Csp = Cs + (gamma * trs + epsilon) * Is
+
+    return Csp
 
 
 
