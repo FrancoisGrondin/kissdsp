@@ -100,8 +100,8 @@ for iteration in range(0, args.count):
     snr_interf = np.random.uniform(-5, +5)
 
     # Apply gain for SNR
-    snr_target *= 10 ** (snr_target / 20)
-    snr_interf *= 10 ** (snr_interf / 20)
+    s_target *= 10 ** (snr_target / 20)
+    s_interf *= 10 ** (snr_interf / 20)
 
     # Apply room impulse response
     x_target = rb.conv(h_target, s_target)
