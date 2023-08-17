@@ -2,7 +2,7 @@ import numpy as np
 import soundfile as sf
 
 
-def read(file_name, sample_rate=16000):
+def read(file_name):
     """
     Read the audio file
 
@@ -15,7 +15,7 @@ def read(file_name, sample_rate=16000):
             Signals in the time domain (nb_of_channels, nb_of_samples).
     """
 
-    data, samplerate = sf.read(file_name, dtype=np.float32, sample_rate=sample_rate)
+    data, samplerate = sf.read(file_name, dtype=np.float32)
 
     if (len(data.shape) == 1):
         data = np.expand_dims(data, 1)
