@@ -2,7 +2,7 @@ import numpy as np
 import soundfile as sf
 
 
-def read(file_name):
+def read(file_name, sample_rate=16000):
     """
     Read the audio file
 
@@ -15,7 +15,7 @@ def read(file_name):
             Signals in the time domain (nb_of_channels, nb_of_samples).
     """
 
-    data, samplerate = sf.read(file_name, dtype=np.float32)
+    data, samplerate = sf.read(file_name, dtype=np.float32, sample_rate=sample_rate)
 
     if (len(data.shape) == 1):
         data = np.expand_dims(data, 1)
@@ -23,7 +23,7 @@ def read(file_name):
     return data.T
 
 
-def write(xs, file_name):
+def write(xs, file_name, sample_rate=16000):
     """
     Write the audio file
 
@@ -34,7 +34,7 @@ def write(xs, file_name):
             The file name of the audio file.
     """
 
-    sf.write(file_name, xs.T, 16000)
+    sf.write(file_name, xs.T, sample_rate)
 
 
 
