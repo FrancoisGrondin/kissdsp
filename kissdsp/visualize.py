@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def wave(xs):
+def wave(xs, title=None):
     """
     Display waveform
 
@@ -14,32 +14,37 @@ def wave(xs):
     nb_of_channels = xs.shape[0]
     nb_of_samples = xs.shape[1]
 
+    plt.suptitle(title)
     for channel_index in range(0, nb_of_channels):
         plt.subplot(nb_of_channels, 1, channel_index + 1)
         plt.plot(xs[channel_index, :])
     plt.show()
 
 
-def spex(Xs):
+def spex(Xs, title=None):
     """
     Display spectrogram
 
     Args:
         Xs (np.ndarray):
             Signals in the frequency domain (nb_of_channels, nb_of_frames, nb_of_bins).
+        title (str):
+            Title of the spectrogram
     """
 
     nb_of_channels = Xs.shape[0]
     nb_of_frames = Xs.shape[1]
     nb_of_bins = Xs.shape[2]
 
+    plt.suptitle(title)
     for channel_index in range(0, nb_of_channels):
         plt.subplot(nb_of_channels, 1, channel_index + 1)
         plt.imshow(np.log(np.abs(Xs[channel_index, :, :]) + 1e-10).T, aspect='auto', origin='lower')
+    
     plt.show()
 
 
-def phase(XXs):
+def phase(XXs, title=None):
     """
     Display the phase between each pair
 
@@ -53,6 +58,7 @@ def phase(XXs):
     nb_of_frames = XXs.shape[2]
     nb_of_bins = XXs.shape[3]
 
+    plt.suptitle(title)
     pair_index = 0
     for channel_index1 in range(0, nb_of_channels1):
         for channel_index2 in range(0, nb_of_channels2):
@@ -63,7 +69,7 @@ def phase(XXs):
     plt.show()
 
 
-def mask(Ms):
+def mask(Ms, title=None):
     """
     Display the Ideal Ratio or Binary Masks
 
@@ -76,13 +82,14 @@ def mask(Ms):
     nb_of_frames = Ms.shape[1]
     nb_of_bins = Ms.shape[2]
 
+    plt.suptitle(title)
     for channel_index in range(0, nb_of_channels):
         plt.subplot(nb_of_channels, 1, channel_index + 1)
         plt.imshow(Ms[channel_index, :, :].T, aspect='auto', origin='lower')
     plt.show()
 
 
-def beampattern(vs):
+def beampattern(vs, title=None):
     """
     Display the beampattern
 
@@ -94,6 +101,7 @@ def beampattern(vs):
     nb_of_bins = vs.shape[0]
     nb_of_channels = vs.shape[1]
 
+    plt.suptitle(title)
     plt.subplot(2, 1, 1)
     plt.imshow(np.abs(vs), aspect='auto', origin='lower')
     plt.subplot(2, 1, 2)
@@ -101,7 +109,7 @@ def beampattern(vs):
     plt.show()
 
 
-def rir(hs):
+def rir(hs, title=None):
     """
     Display the room impulse responses
 
@@ -114,6 +122,7 @@ def rir(hs):
     nb_of_channels = hs.shape[1]
     nb_of_samples = hs.shape[2]
 
+    plt.suptitle(title)
     for source_index in range(0, nb_of_sources):
         plt.subplot(nb_of_sources, 1, source_index+1)
         plt.plot(hs[source_index, :, :].T)
@@ -121,7 +130,7 @@ def rir(hs):
     plt.show()
 
 
-def room(rm):
+def room(rm, title=None):
     """
     Display the room geometry
 
@@ -131,6 +140,7 @@ def room(rm):
     """
 
     fig = plt.figure()
+    fig.suptitle(title)
     ax = fig.add_subplot(projection='3d')
 
     ax.scatter(rm['mics'][:, 0] + rm['origin'][0], 
@@ -149,7 +159,7 @@ def room(rm):
     plt.show()
 
 
-def xcorr(xxs):
+def xcorr(xxs, title=None):
     """
     Display the cross correlation
 
@@ -163,6 +173,7 @@ def xcorr(xxs):
     nb_of_frames = xxs.shape[2]
     frame_size = xxs.shape[3]
 
+    plt.suptitle(title)
     pair_index = 0
     for channel_index1 in range(0, nb_of_channels1):
         for channel_index2 in range(0, nb_of_channels2):

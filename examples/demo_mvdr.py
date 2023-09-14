@@ -59,7 +59,7 @@ Zs = bf.beam(Ys, ws)
 # Return to time domain
 zs = fb.istft(Zs)
 
-vz.spex(Ys)
-vz.spex(Zs)
-vz.wave(ys)
-vz.wave(zs)
+vz.spex(Ys, "Original Spectrogram")
+vz.spex(Zs, "MVDR Beamformed Spectrogram")
+vz.wave(ys, "Original Waveform")
+vz.wave(zs, "MVDR Beamformed Waveform")
