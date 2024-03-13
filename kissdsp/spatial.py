@@ -126,6 +126,33 @@ def steering(Cs):
     return vs
 
 
+def steering_tdoa(tdoa, frame_size=512, sample_rate=16000):
+    """
+    Compute the Steering Vector by time-difference-of-arrival
+
+    Args:
+        tdoa (np.ndarray):
+            The time-difference-of-arrival for steered source (1, nb_of_channels)
+        freq_vec (np.ndarray):
+            Frequency value in Hertz for each frequency bin (1, nb_of_bins)
+
+    Returns:
+        (np.ndarray):
+            The steering vector in the frequency domain (nb_of_bins, nb_of_channels)
+    """
+
+    nb_of_bins = int(frame_size/2+1)
+    nb_of_channels = tdoa.shape[0]
+
+    freq_vec = np.arange(nb_of_bins)/(nb_of_bins-1)*(sample_rate/2)
+
+    vs = np.zeros((nb_of_bins,nb_of_channels),dtype = 'complex_')
+    for bin_i in range(nb_of_bins):
+        vs[bin_i,:] = np.exp(1j * -2 * np.pi * freq_vec[bin_i] * tdoa)
+
+    return vs
+
+
 def freefield(tdoas, frame_size=512):
     """
     Generate the Free Field Spatial Correlation Matrix (rank 1)

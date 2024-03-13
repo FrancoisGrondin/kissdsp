@@ -56,7 +56,7 @@ def gev(SSs, NNs):
     return ws
 
 
-def pfm(Xs, ws, phase_threshold=10):
+def pfm(Xs, ws, phase_threshold=10, return_mask=False):
     """
     Apply phase-based frequency masking.
 
@@ -94,12 +94,18 @@ def pfm(Xs, ws, phase_threshold=10):
     phase_diffs[phase_diffs > 180] = np.abs(360-phase_diffs[phase_diffs > 180])
     phase_avgdiffs = np.mean(phase_diffs,axis=2)
 
+    #deciding if output is a the generated mask or the actual masked signals
+    if return_mask:
+        Ys = np.ones(Xs[:,:,0].shape)
+        Is = np.ones(Xs[:,:,0].shape)
+    else:
+        Ys = np.copy(Xs[:,:,0])
+        Is = np.copy(Xs[:,:,0])
+
     # masking reference microphone based on phase difference threshold to obtain:
     # - the SOI
-    Ys = np.copy(Xs[:,:,0])
     Ys[phase_avgdiffs > phase_threshold] = 0.0
     # - the noise
-    Is = np.copy(Xs[:,:,0])
     Is[phase_avgdiffs <= phase_threshold] = 0.0
 
     return np.concatenate((np.expand_dims(Ys,axis=0),np.expand_dims(Is,axis=0)),axis=0)
