@@ -21,9 +21,10 @@ def mvdr(SSs, NNs):
     nb_of_bins = SSs.shape[0]
     nb_of_channels = SSs.shape[1]
 
-    NNsInv = np.linalg.inv(NNs)
+    # NN^-1 @ SSs
+    numerator = np.linalg.solve(NNs, SSs)
     
-    ws = (NNsInv @ SSs / np.tile(np.expand_dims(np.trace(NNsInv @ SSs, axis1=1, axis2=2), axis=(1,2)), reps=(1, nb_of_channels, nb_of_channels)))[:, :, 0]
+    ws = (numerator / np.tile(np.expand_dims(np.trace(numerator, axis1=1, axis2=2), axis=(1,2)), reps=(1, nb_of_channels, nb_of_channels)))[:, :, 0]
     
     return ws
 
