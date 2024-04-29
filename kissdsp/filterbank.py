@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def stft(xs, hop_size=128, frame_size=512):
+def stft(xs, hop_size=128, frame_size=512, window=None):
     """
     Perform STFT
 
@@ -12,6 +12,8 @@ def stft(xs, hop_size=128, frame_size=512):
             Space in samples between windows.
         frame_size (int):
             Number of samples per window.
+        window (ndarray):
+            Window the length of the frame size. Defaults to Hann window. (frame_size,)
     Returns:
         (np.ndarray):
             The time-frequency representation (nb_of_channels, nb_of_frames, nb_of_bins)
@@ -22,7 +24,9 @@ def stft(xs, hop_size=128, frame_size=512):
     nb_of_frames = int((nb_of_samples - frame_size + hop_size) / hop_size)
     nb_of_bins = int(frame_size/2+1)
 
-    ws = np.tile(np.hanning(frame_size), (nb_of_channels, 1))
+    if window is None:
+        window = np.hanning(frame_size)
+    ws = np.tile(window, (nb_of_channels, 1))
     Xs = np.zeros((nb_of_channels, nb_of_frames, nb_of_bins), dtype=np.csingle)
 
     for i in range(0, nb_of_frames):
@@ -31,7 +35,7 @@ def stft(xs, hop_size=128, frame_size=512):
     return Xs
 
 
-def istft(Xs, hop_size=128):
+def istft(Xs, hop_size=128, window=None):
     """
     Perform iSTFT
 
@@ -40,6 +44,8 @@ def istft(Xs, hop_size=128):
             Signals in the frequency domain (nb_of_channels, nb_of_frames, nb_of_bins).
         hop_size (int):
             Space in samples between windows.
+        window (ndarray):
+            Window the length of the frame size. Defaults to Hann window. (frame_size,)
     Returns:
         (np.ndarray):
             The time-frequency representation (nb_of_channels, nb_of_samples).
@@ -50,8 +56,10 @@ def istft(Xs, hop_size=128):
     nb_of_bins = Xs.shape[2]
     frame_size = (nb_of_bins-1)*2
     nb_of_samples = nb_of_frames * hop_size + frame_size - hop_size
-
-    ws = np.tile(np.hanning(frame_size), (nb_of_channels, 1))
+    
+    if window is None:
+        window = np.hanning(frame_size)
+    ws = np.tile(window, (nb_of_channels, 1))
     xs = np.zeros((nb_of_channels, nb_of_samples), dtype=np.float32)
 
     for i in range(0, nb_of_frames):
