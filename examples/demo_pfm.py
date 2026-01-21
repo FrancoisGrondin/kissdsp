@@ -44,19 +44,29 @@ ys = rb.conv(hy, y)
 Ts = fb.stft(ts)
 Ys = fb.stft(ys)
 
-# Compute spatial correlation matrices
+# Compute time-difference-of-arrival of target speech
+tdoas = rb.tdoa(rm)
+tdoa_t = tdoas[0,:]
+
+# Compute oracle spatial correlation matrices
 TTs = sp.scm(sp.xspec(Ts))
 
-# Compute steering vector
-ws = sp.steering(TTs)
+# Compute steering vectors, one using spatial correlation, another using tdoas
+ws_scm = sp.steering(TTs)
+ws_tdoa = sp.steering_tdoa(tdoa_t)
 
-# Perform phase-based frequency masking
-Zs = bf.pfm(Ys, ws)
+# Perform phase-based frequency masking using both steering vectors
+Zs_scm = bf.pfm(Ys, ws_scm)
+Zs_tdoa = bf.pfm(Ys, ws_tdoa)
 
 # Return to time domain
-zs = fb.istft(Zs)
+zs_scm = fb.istft(Zs_scm)
+zs_tdoa = fb.istft(Zs_tdoa)
 
 vz.spex(Ys)
-vz.spex(Zs)
+vz.spex(Zs_scm)
+vz.spex(Zs_tdoa)
 vz.wave(ys)
-vz.wave(zs)
+vz.wave(zs_scm)
+vz.wave(zs_tdoa)
+

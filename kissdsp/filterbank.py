@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def stft(xs, hop_size=128, frame_size=512):
+def stft(xs, hop_size=128, frame_size=512, wola=False):
     """
     Perform STFT
 
@@ -22,7 +22,11 @@ def stft(xs, hop_size=128, frame_size=512):
     nb_of_frames = int((nb_of_samples - frame_size + hop_size) / hop_size)
     nb_of_bins = int(frame_size/2+1)
 
-    ws = np.tile(np.hanning(frame_size), (nb_of_channels, 1))
+    if wola:
+      ws = np.tile(np.sqrt(np.hanning(frame_size)), (nb_of_channels, 1))
+    else:
+      ws = np.tile(np.hanning(frame_size), (nb_of_channels, 1))
+
     Xs = np.zeros((nb_of_channels, nb_of_frames, nb_of_bins), dtype=np.csingle)
 
     for i in range(0, nb_of_frames):
@@ -31,7 +35,7 @@ def stft(xs, hop_size=128, frame_size=512):
     return Xs
 
 
-def istft(Xs, hop_size=128):
+def istft(Xs, hop_size=128, wola=False):
     """
     Perform iSTFT
 
@@ -51,7 +55,11 @@ def istft(Xs, hop_size=128):
     frame_size = (nb_of_bins-1)*2
     nb_of_samples = nb_of_frames * hop_size + frame_size - hop_size
 
-    ws = np.tile(np.hanning(frame_size), (nb_of_channels, 1))
+    if wola:
+      ws = np.tile(np.sqrt(np.hanning(frame_size)), (nb_of_channels, 1))
+    else:
+      ws = np.tile(np.hanning(frame_size), (nb_of_channels, 1))
+
     xs = np.zeros((nb_of_channels, nb_of_samples), dtype=np.float32)
 
     for i in range(0, nb_of_frames):

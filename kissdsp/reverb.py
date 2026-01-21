@@ -268,7 +268,7 @@ def tdoa(rm, sample_rate=16000):
 
     for source_index in range(0, nb_of_sources):
         dist = np.sqrt(np.sum((rm["srcs"][source_index, :] - (rm["origin"] + rm["mics"])) ** 2, axis=1))
-        tdoas[source_index, :] = (sample_rate/rm["c"]) * dist
+        tdoas[source_index, :] = dist/rm["c"] #(sample_rate/rm["c"]) * dist
         tdoas[source_index, :] -= tdoas[source_index, 0]
 
     return tdoas
